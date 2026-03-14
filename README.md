@@ -227,6 +227,7 @@ Every report includes:
 - **[Architecture](docs/ARCHITECTURE.md)** — Full phase-by-phase technical specification
 - **[Prompt Templates](docs/PROMPTS.md)** — All agent templates with variable reference
 - **[Safety & Privacy](docs/SAFETY.md)** — Guardrails, privacy disclosure, tool permissions
+- **[Privacy Policy](https://qinnovate.com/privacy)** — Full privacy policy for all qinnovate tools
 
 ## License
 
