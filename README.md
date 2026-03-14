@@ -130,34 +130,84 @@ Quorum runs a multi-phase pipeline. You don't need to understand this to use it 
 6. **Validation** — Independent reviewer challenges the synthesis
 7. **Final report** — What survived, what's disputed, what to do next
 
+## What Makes Quorum Different
+
+Every multi-agent tool in the Claude Code ecosystem does the same thing: splits a task, hands each piece to an agent, collects answers, merges them. More hands, same brain. If all 8 agents hallucinate the same thing, you get a confident, well-formatted wrong answer.
+
+Quorum is the only plugin that asks: *"How do we know this answer is actually right?"*
+
+**What exists today and why it's not enough:**
+
+- **Claude Swarm, Auto-Claude, Claude Squad** — task dispatchers. Agents never challenge each other. No source verification. No debate.
+- **CrewAI, AutoGen, LangGraph** — require Python setup, YAML configs, infrastructure. Hours of work before your first question. And agents still don't argue.
+- **Cursor, Copilot, Windsurf** — single agent, single perspective, coding only. No second opinion.
+
+**What Quorum adds that none of them have:**
+
+- Agents assigned **opposing positions**, forced to defend them with evidence
+- A **Devil's Advocate** who argues against the majority — because the answer that survives pushback is the one worth trusting
+- Challenge agents get **less context on purpose** so they can't just agree with everyone
+- Research agents search **different sources with different terms** — not the same Google result five times
+- The supervisor **judges reasoning quality**, not vote counts — a well-argued minority beats a hand-waving majority
+- **Dialectic mode** — two agents drill through contradiction across multiple rounds until they hit bedrock. Doesn't exist anywhere else
+
+The difference: other tools give you more answers. Quorum gives you *better* answers.
+
 ## Examples
 
-**Strategy decision:**
+It's not a developer tool. It's a thinking tool. Any question where you'd want a smart friend to push back before you commit.
+
+**Before a job interview:**
 ```
-/quorum "Should we raise prices 20% or add a premium tier?"
+/quorum "I'm interviewing at Stripe for senior security engineer. What will they ask that I'm not preparing for?"
 ```
 
-**Technical architecture:**
+**Settling an argument:**
 ```
-/quorum "Evaluate microservices vs monolith for our 50-person engineering team" --full
+/quorum "Is a hot dog a sandwich?" --rigor dialectic
 ```
 
-**Research question:**
+**Naming your startup:**
 ```
-/quorum "What are the most promising approaches to Alzheimer's early detection?" --mode research
+/quorum "We're building AI tutoring for kids with ADHD. Evaluate these names: FocusOwl, Sparktrain, Brainbuddy" --rigor high
+```
+
+**Buying a house:**
+```
+/quorum "We found a house for $450K, 1960s build, no inspection yet. What should first-time buyers worry about?"
+```
+
+**Career crossroads:**
+```
+/quorum "I'm 35, making $180K in fintech, got offered $140K at a climate startup. Is the pay cut worth it?" --rigor dialectic
+```
+
+**Evaluating a business idea:**
+```
+/quorum "An app that matches dog owners for group walks. Is this a business or a feature?" --full
+```
+
+**Planning a difficult conversation:**
+```
+/quorum "I need to tell my cofounder we should pivot. They've spent 8 months on the current product. How do I frame this?"
+```
+
+**Dog health:**
+```
+/quorum "My 11-year-old golden retriever started limping after a walk. No swelling. What should I know before calling the vet?"
+```
+
+**Research deep-dive:**
+```
+/quorum "What are the most promising approaches to Alzheimer's early detection?" --mode research --full
 ```
 
 **Document review:**
 ```
-/quorum "Review this contract for risks" --artifact contract.pdf --rigor high
+/quorum "Review this contract for risks I might miss" --artifact contract.pdf --rigor high
 ```
 
-**Life decision:**
-```
-/quorum "Should I leave my job to start a company?" --rigor dialectic
-```
-
-**Quick take:**
+**Quick opinion:**
 ```
 /quorum "Best Python web framework for a small API?" --lite
 ```
