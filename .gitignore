@@ -1,0 +1,4 @@
+_memory/
+_swarm/
+*.output
+.DS_Store
