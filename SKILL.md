@@ -1,7 +1,7 @@
 ---
 name: quorum
 description: "Quorum: orchestrate a swarm of AI experts on any question. Specialists debate, research, and validate — then a polymath supervisor delivers the verdict. One command, multiple minds, stress-tested answers."
-argument-hint: '"your question" [--rigor low|medium|high|dialectic] [--size N] [--full] [--lite] [--artifact PATH] [--mode research|review|hybrid] [--teams "a,b,c"] [--org]'
+argument-hint: '"your question" [--ponder] [--rigor low|medium|high|dialectic] [--size N] [--full] [--lite] [--artifact PATH] [--mode research|review|hybrid] [--teams "a,b,c"] [--org]'
 disable-model-invocation: true
 version: 3.2.0
 author: Kevin Qi (qinnovate.com)
@@ -67,7 +67,8 @@ That's it. Default is fast mode (5 agents, 1 round). For deeper analysis:
 /quorum "your question" --artifact file.md        # Review a specific document
 /quorum "your question" --rigor dialectic         # Socratic deep-dive (2 agents, multiple rounds)
 /quorum "Validate this research" --artifact _swarm/report.md --rigor high  # Fact-check a prior swarm
-/quorum "your question" --dry-run                 # See the plan before running
+/quorum "How should we handle auth?" --ponder      # Refine the question before running
+/quorum "your question" --dry-run                  # See the plan before running
 ```
 
 ## Research + Validation Workflow
@@ -126,6 +127,108 @@ Every validation report includes a **Panel Provenance** section (who validated, 
 
 > **Scope disclaimer:** Quorum validates claims present in the submitted research. It does not audit search completeness, source selection methodology, or what the research omitted. A clean validation means "we found no problems in what was provided" — not "the research is comprehensive."
 
+## Prompt Optimization
+
+A bad question produces a bad swarm. Quorum includes built-in prompt optimization to make sure agents are working on the right problem.
+
+### Default behavior (always on)
+
+Before spawning agents, the supervisor silently refines the user's question:
+
+1. **Decompose ambiguity.** If the question contains multiple sub-questions, separate them and identify which is primary.
+2. **Identify the real question.** "Should we use React?" often means "What are the tradeoffs of React vs. our current stack for our specific constraints?" The supervisor reframes to the underlying decision.
+3. **Scope to actionability.** "Tell me about encryption" is unbounded. The supervisor narrows based on context: "What encryption approach fits a BCI data pipeline with real-time latency constraints?"
+4. **Select the right mode.** The refined question determines whether RESEARCH, REVIEW, or HYBRID mode will produce the best result.
+
+This happens automatically. The user sees the refined question in the report header.
+
+### `--ponder` mode (interactive refinement)
+
+When `--ponder` is set, the supervisor pauses before spawning and asks the user 2-3 targeted questions:
+
+```bash
+/quorum "How should we handle authentication?" --ponder
+```
+
+```
+[Quorum] Before I assemble the panel, let me make sure I'm asking the right question.
+
+1. What system is this for? (web app, API, mobile, IoT device, BCI interface?)
+2. What's your current auth approach, if any? (so the panel knows what they're comparing against)
+3. What matters most: security, user experience, or implementation speed?
+
+Reply with your answers and I'll generate the optimized prompt.
+```
+
+After the user responds, the supervisor generates a refined prompt:
+
+```
+[Quorum] Based on your answers, here's the optimized question:
+
+  "Evaluate authentication approaches for a real-time BCI data pipeline
+   currently using API keys. Priority: security > UX > speed. Must support
+   device-level auth for embedded hardware. Compare: mTLS, OAuth2 device
+   flow, and hardware-bound tokens."
+
+Run with this? (y/edit/cancel)
+```
+
+The user can approve, edit, or cancel before any agents are spawned.
+
+### Why this matters
+
+Quorum at `--full` costs ~300-500K tokens and 5-8 minutes. Spending 30 seconds on prompt refinement prevents wasting that budget on a question the swarm interprets differently than the user intended. The `--ponder` questions are designed to surface:
+
+- **Hidden constraints** the user knows but didn't state
+- **Scope ambiguity** that would cause agents to scatter
+- **The actual decision** behind the stated question
+- **What "good" looks like** so the panel optimizes for the right outcome
+
+### Auto-ponder: the Socratic Gate
+
+Even without `--ponder`, the supervisor runs a **Socratic Gate** on every query before spawning agents. This is Socrates applied to the input, not the output.
+
+The supervisor scores the query on five dimensions:
+
+| Dimension | Question the Supervisor Asks Internally | Low Score Trigger |
+|-----------|----------------------------------------|-------------------|
+| **Specificity** | Does the query name a concrete system, artifact, or decision? | "What about security?" (no target) |
+| **Scope** | Can this be answered in one swarm, or is it actually 3 questions? | "How do we build, deploy, and market our product?" |
+| **Constraints** | Are there enough boundaries for agents to optimize against? | "What's the best database?" (no constraints) |
+| **Actionability** | Will the answer tell the user what to DO? | "Tell me about encryption" (no decision frame) |
+| **Falsifiability** | Could an agent argue the opposite? If not, it's not a real question. | "Is security important?" (unfalsifiable) |
+
+**Scoring:** Each dimension gets 0 (missing), 1 (partial), or 2 (clear). Total range: 0-10.
+
+| Score | Action |
+|-------|--------|
+| 8-10 | Proceed normally. Query is sharp enough. |
+| 5-7 | Supervisor silently refines (default behavior). Shows refined question in report header. |
+| 0-4 | **Auto-ponder triggers.** Supervisor pauses and asks 2-3 questions before proceeding, same as `--ponder`. Tells the user: "Your question is broad enough that the swarm would scatter. Let me ask a few things first." |
+
+This means `--ponder` is the explicit opt-in, but vague queries get ponder automatically. The Socratic Gate is Socrates questioning the *user*, not the agents. Same principle: expose the unstated assumption before the expensive work begins.
+
+**Override:** If the user adds `--no-ponder`, skip auto-ponder even for low-scoring queries. The user knows what they want.
+
+### Plato's role in prompt optimization
+
+Plato (the evidence auditor) also contributes to prompt quality, but at the *output* stage:
+
+- If the refined prompt contains claims or assumptions ("Our system currently uses X"), Plato flags them for verification before agents treat them as ground truth
+- If the user's constraints reference specific numbers ("We need sub-100ms latency"), Plato checks whether those numbers appeared in the project context or were stated by the user without evidence
+- This prevents the optimized prompt itself from becoming a source of hallucination
+
+### Ponder question design (supervisor guidelines)
+
+When generating ponder questions (explicit or auto-triggered), the supervisor follows these rules:
+
+1. **Max 3 questions.** More than 3 creates friction. If you need more context, infer from the project directory.
+2. **No yes/no questions.** Every question should elicit context the swarm needs.
+3. **First question = scope.** What specific system, domain, or artifact is this about?
+4. **Second question = constraints.** What are the non-obvious boundaries (budget, timeline, existing tech, team size)?
+5. **Third question = success criteria.** What does "good" look like? What would make the user act on the result?
+6. **Use the project context.** Before asking, read the working directory, git history, and any relevant files. Don't ask questions the codebase already answers.
+
 ## Invocation
 
 ```
@@ -154,6 +257,8 @@ Every validation report includes a **Panel Provenance** section (who validated, 
 | `--dry-run` | — | Show estimated config (agent count, mode, domains, estimated tokens) without running |
 | `--teams "a,b,c"` | auto | Subteam mode: define named teams (e.g., `"engineering,legal,clinical"`). Each team gets 3-5 members + a team lead. Teams deliberate internally, then leads cross-review. |
 | `--org` | — | Full org mode: auto-detect teams from the query domain, spawn team leads + members, run internal deliberation + cross-team challenge. Like `--full` but hierarchical. |
+| `--ponder` | — | Before running, ask 2-3 clarifying questions to refine the prompt. Generates an optimized question for user approval before spawning agents. Auto-triggers for vague queries (Socratic Gate score < 5). |
+| `--no-ponder` | — | Skip auto-ponder even for vague queries. Use when you know what you want. |
 
 ### Examples
 ```

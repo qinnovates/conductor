@@ -20,6 +20,28 @@
 
 ---
 
+## Prompt Optimization (`--ponder`)
+
+Before spending 300K+ tokens on a swarm, make sure the question is right.
+
+**Default (always on):** Supervisor silently refines vague questions before spawning.
+
+**`--ponder` (interactive):** Supervisor asks you 2-3 clarifying questions, then generates an optimized prompt for your approval.
+
+```bash
+/quorum "How should we handle auth?" --ponder
+
+# Quorum asks: What system? Current approach? Priority: security vs UX vs speed?
+# You answer. Quorum generates a precise prompt. You approve, edit, or cancel.
+```
+
+Use `--ponder` when:
+- Your question is broad ("What about security?")
+- You're not sure what the swarm should optimize for
+- You want to save tokens by getting the prompt right before spawning 8+ agents
+
+---
+
 ## Flat Swarms (Default)
 
 A flat swarm is a single panel of experts debating in parallel. No hierarchy, no teams. The supervisor coordinates everyone directly.
