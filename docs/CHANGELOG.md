@@ -2,6 +2,24 @@
 
 All notable changes to Quorum are documented here.
 
+## [v4.0.0](https://github.com/qinnovates/quorum/releases/tag/v4.0.0) — 2026-03-17
+
+### Added — Adaptive Intelligence
+- **Project Profiles** (`_swarm/project-profile.json`) — auto-generated on first run, persists project context (type, domains, tech stack, default teams, constraints) across runs. Eliminates re-discovery. Boosts Socratic Gate scoring. Sharpens ponder questions.
+- **Task Classification Gate** — 4-dimension scoring matrix (Domain count, Certainty demand, Scope breadth, Artifact presence). Score 0-12 maps to mode, agent count, structure, and rigor. Override rules for binary decisions (auto-dialectic), feasibility probes (dialectic-first), and cross-domain questions (auto-org).
+- **Config Transparency Block** — replaces `--dry-run` with "here's what I read, here's my config, here's why." Always shown unless `--quiet`. User approves, edits, or cancels before tokens are spent.
+- **Adaptive Output Templates** — 5 templates matched to task type: AUDIT (verdict + finding table), RESEARCH (evidence table + citations), DIALECTIC (dialogue transcript + what emerged), DECISION (recommendation + tradeoff table), ORG (team positions + clash table + Socrates/Plato sections).
+- New flags: `--yes` (auto-proceed), `--quiet` (suppress transparency block), `--profile show|update|reset`, `--format audit|research|dialectic|decision|org`
+
+### Changed
+- Quick Start updated: "auto-configures everything" replaces "default is fast mode (5 agents)"
+- Version bump 3.2.0 → 4.0.0 (breaking: output format changes, default behavior changes)
+
+### Design Process
+Feature designed by a 6-agent Quorum swarm (3 teams: Architecture, UX, Efficiency). Swarm report: `_swarm/2026-03-17-quorum-adaptive-intelligence.md`
+
+---
+
 ## [v3.2.0](https://github.com/qinnovates/quorum/releases/tag/v3.2.0) — 2026-03-17
 
 ### Security Hardening

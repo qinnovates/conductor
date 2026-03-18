@@ -3,7 +3,7 @@ name: quorum
 description: "Quorum: orchestrate a swarm of AI experts on any question. Specialists debate, research, and validate — then a polymath supervisor delivers the verdict. One command, multiple minds, stress-tested answers."
 argument-hint: '"your question" [--ponder] [--rigor low|medium|high|dialectic] [--size N] [--full] [--lite] [--artifact PATH] [--mode research|review|hybrid] [--teams "a,b,c"] [--org]'
 disable-model-invocation: true
-version: 3.2.0
+version: 4.0.0
 author: Kevin Qi (qinnovate.com)
 homepage: https://qinnovate.com
 allowed-tools:
@@ -61,14 +61,15 @@ That is the difference between a task dispatcher and a reasoning amplifier.
 /quorum "your question here"
 ```
 
-That's it. Default is fast mode (5 agents, 1 round). For deeper analysis:
+That's it. Quorum reads your project and auto-configures — no flags needed. It picks the right mode, agent count, and team structure based on what you're asking and where you're asking it.
+
 ```
-/quorum "your question" --full                    # 8 agents, 2 rounds, independent validation
-/quorum "your question" --artifact file.md        # Review a specific document
-/quorum "your question" --rigor dialectic         # Socratic deep-dive (2 agents, multiple rounds)
-/quorum "Validate this research" --artifact _swarm/report.md --rigor high  # Fact-check a prior swarm
-/quorum "How should we handle auth?" --ponder      # Refine the question before running
-/quorum "your question" --dry-run                  # See the plan before running
+/quorum "your question"                            # Auto-configures everything
+/quorum "your question" --ponder                   # Ask me clarifying questions first
+/quorum "your question" --dry-run                  # Show config reasoning without running
+/quorum "your question" --full                     # Override: force 8 agents, 2 rounds
+/quorum "your question" --rigor dialectic          # Override: force Socratic deep-dive
+/quorum "Validate this" --artifact report.md       # Override: validation workflow
 ```
 
 ## Research + Validation Workflow
@@ -229,6 +230,143 @@ When generating ponder questions (explicit or auto-triggered), the supervisor fo
 5. **Third question = success criteria.** What does "good" look like? What would make the user act on the result?
 6. **Use the project context.** Before asking, read the working directory, git history, and any relevant files. Don't ask questions the codebase already answers.
 
+## Adaptive Intelligence
+
+Quorum reads your project before configuring. No more flat-5 defaults.
+
+### Pre-Phase 0: Context Engine
+
+Before the supervisor designs the swarm, a context engine runs automatically:
+
+1. **Load project profile** from `_swarm/project-profile.json` (if it exists)
+2. **If first run:** scan the directory (file types, package.json/Cargo.toml, CLAUDE.md, git log, file count) and generate a profile
+3. **Classify the task** using the query + project context
+4. **Auto-configure** mode, size, structure, and rigor
+5. **Show the Config Transparency Block** (unless `--quiet`)
+
+### Project Profiles (`_swarm/project-profile.json`)
+
+Generated automatically on first run. Persists across runs so Quorum stops re-discovering your project.
+
+```json
+{
+  "project_id": "six-dots",
+  "identity": {
+    "type": "ios-application",
+    "summary": "iOS Swift/SwiftUI accessibility app for blind users",
+    "domains": ["creative/design", "engineering/CS", "medical/health"],
+    "tech_stack": ["Swift", "SwiftUI", "Core Haptics", "VoiceOver"]
+  },
+  "defaults": {
+    "teams": ["accessibility", "engineering", "design"],
+    "persona_bias": ["Accessibility Expert", "iOS Engineer", "UX Researcher"],
+    "rigor": "medium"
+  },
+  "constraints": [
+    "VoiceOver compatibility is non-negotiable",
+    "Haptic feedback must work without visual confirmation"
+  ],
+  "history": {
+    "run_count": 5,
+    "last_3_topics": ["haptic vocabulary", "stair detection", "bug audit"],
+    "recurring_domains": {"engineering/CS": 5, "creative/design": 4}
+  }
+}
+```
+
+**Lifecycle:**
+- **First run:** Auto-generated from directory scan. Supervisor asks: "I've created a project profile. Want to review it?"
+- **Subsequent runs:** Loaded at Phase 0 start. Skips directory scanning.
+- **Drift detection:** If the query hits a domain not in the profile, it's added automatically.
+- **Maintenance:** `--profile show` to inspect, `--profile update` to rescan, `--profile reset` to regenerate.
+
+### Task Classification Gate
+
+The supervisor scores every query on 4 dimensions (0-3 each):
+
+| Dimension | 0 | 1 | 2 | 3 |
+|-----------|---|---|---|---|
+| **D: Domain count** | Single domain | 2 domains | 3 domains | 4+ domains |
+| **C: Certainty demand** | Brainstorm | Inform decision | Ship/publish | Safety/legal/irreversible |
+| **S: Scope breadth** | Single question | 1-2 sub-questions | "Comprehensive" | "All/every/entire" |
+| **A: Artifact presence** | None | Implicit reference | Explicit `--artifact` | Multi-file/repo audit |
+
+**Score (D+C+S+A) maps to config:**
+
+| Score | Mode | Agents | Structure | Rigor |
+|-------|------|--------|-----------|-------|
+| 0-2 | auto | 3 (lite) | flat | low |
+| 3-4 | auto | 5 | flat | medium |
+| 5-6 | auto | 6-8 | flat | medium |
+| 7-8 | hybrid | 8-10 | flat or 2-team | high |
+| 9-10 | hybrid | 10-14 | org (3 teams) | high |
+| 11-12 | hybrid | 15-17 | org (3-4 teams) | high |
+
+**Override rules (applied after scoring):**
+
+| Pattern | Override |
+|---------|----------|
+| "X or Y?" binary comparison | dialectic, 2 agents |
+| "Feasibility" / "can we" | dialectic first, expand if viable |
+| `--artifact` + "review/audit/validate" | review mode, high rigor |
+| D >= 3, no `--teams` | auto-org |
+| C >= 3 (high stakes) | rigor = high minimum |
+| "Fix/patch" + scope <= 3 files | 2-3 agents, flat |
+
+**Explicit flags always override auto-config.** `--lite`, `--full`, `--org`, `--size N`, `--rigor X` trump the classification gate.
+
+### Config Transparency Block
+
+After auto-config but before spawning, Quorum shows its reasoning:
+
+```
+/quorum "Fix the VoiceOver focus order on the stair detection screen"
+
+[Quorum] Config
+  Project: Six Dots (iOS accessibility app, Swift/SwiftUI)
+  Task: UI fix, single screen, single domain
+  Score: D=1 C=1 S=0 A=0 → 2 (lite)
+
+  Config: 3 agents | flat | REVIEW | medium rigor
+    Accessibility Specialist, iOS Engineer, Devil's Advocate
+
+  Proceed? [Y] / edit / cancel
+```
+
+```
+/quorum "Should we open-source the neural firewall before publishing?"
+
+[Quorum] Config
+  Project: qinnovate (BCI security research)
+  Task: Ship decision, 4 domains (security, strategy, academic, legal)
+  Score: D=3 C=3 S=2 A=0 → 8 (cross-domain)
+
+  Config: 14 agents | 3 teams (--org auto) | HYBRID | high rigor
+    Security (red team, IP exposure) | Strategy (open-source economics) | Academic (publication priority)
+    + Socrates + Plato
+
+  Proceed? [Y] / edit / cancel
+```
+
+**Auto-proceed rules:** Only if `--yes` AND score >= 8 AND agents <= 5. Otherwise, always ask.
+
+### Adaptive Output Templates
+
+Output format matches task type. No more one-size-fits-all reports.
+
+| Task Type | Output Shape | Lead Section | Key Sections |
+|-----------|-------------|-------------|--------------|
+| **AUDIT** | Checklist | Verdict: PASS / PASS WITH CONDITIONS / FAIL | Finding table (severity/status), required actions, recommended actions |
+| **RESEARCH** | Evidence base | Direct answer with confidence | Evidence table (citations/tiers), conflicts in literature, gaps |
+| **DIALECTIC** | Insight chain | What emerged (synthesis/bedrock/spark) | Full dialogue transcript, witness reactions |
+| **DECISION** | Recommendation | Recommendation + why | Tradeoff table, dissenting view, conditions that would change it |
+| **ORG** | Executive briefing | Supervisor's ruling | Team positions, clash table, Socrates questions, Plato audit |
+
+The supervisor selects the template during Phase 0 based on task classification. `--format audit|research|dialectic|decision|org` to override.
+
+**Always present:** Config header, lead section, blind spots, appendix (agent reports).
+**Removed from all templates:** Generic "Disagreement Register" and "Consensus Matrix" — replaced by task-specific sections (conflicts in literature, dissenting view, clash table).
+
 ## Invocation
 
 ```
@@ -259,6 +397,12 @@ When generating ponder questions (explicit or auto-triggered), the supervisor fo
 | `--org` | — | Full org mode: auto-detect teams from the query domain, spawn team leads + members, run internal deliberation + cross-team challenge. Like `--full` but hierarchical. |
 | `--ponder` | — | Before running, ask 2-3 clarifying questions to refine the prompt. Generates an optimized question for user approval before spawning agents. Auto-triggers for vague queries (Socratic Gate score < 5). |
 | `--no-ponder` | — | Skip auto-ponder even for vague queries. Use when you know what you want. |
+| `--yes` | — | Auto-proceed past Config Transparency Block without asking. |
+| `--quiet` | — | Suppress Config Transparency Block entirely. For scripted/pipeline use. |
+| `--profile show` | — | Display current project profile. |
+| `--profile update` | — | Rescan directory and regenerate profile. |
+| `--profile reset` | — | Delete and regenerate profile from scratch. |
+| `--format FORMAT` | auto | Output template: `audit`, `research`, `dialectic`, `decision`, `org` (auto-detected if omitted). |
 
 ### Examples
 ```

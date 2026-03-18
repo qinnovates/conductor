@@ -235,6 +235,17 @@ Every report includes:
 - **Priority Actions** — Ranked by impact, not by how many agents mentioned them
 - **Blind Spots** — What the team collectively could not evaluate
 
+## What's New in v4.0.0
+
+**Adaptive Intelligence.** Quorum now reads your project before configuring. No more flat-5 defaults.
+
+- **Project Profiles** — auto-generated on first run, persists context across runs. Quorum stops re-discovering your project every time.
+- **Task Classification Gate** — scores every query on 4 dimensions (domain count, certainty demand, scope, artifact) and auto-selects mode, agent count, structure, and rigor.
+- **Config Transparency Block** — shows what Quorum read, what it decided, and why. Approve, edit, or cancel before tokens are spent.
+- **Adaptive Output Templates** — 5 output formats matched to task type: AUDIT (checklist), RESEARCH (evidence base), DIALECTIC (insight chain), DECISION (tradeoff table), ORG (executive briefing).
+
+[Full changelog →](docs/CHANGELOG.md)
+
 ## What's New in v3.2.0
 
 **Security hardening release.** Removed shell access from agent manifest, added prompt injection defense to all agent templates, defined credential detection patterns, fixed privacy disclosures. [Full changelog →](docs/CHANGELOG.md)
