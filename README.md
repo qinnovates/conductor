@@ -259,7 +259,8 @@ Works on any research — not just Quorum output. Feed it a paper draft, competi
 - **[Prompt Templates](docs/PROMPTS.md)** — All agent templates with variable reference
 - **[Safety & Privacy](docs/SAFETY.md)** — Guardrails, privacy disclosure, tool permissions
 - **[Privacy Policy](https://qinnovate.com/privacy)** — Full privacy policy for all qinnovate tools
-- **[Releases](https://github.com/qinnovates/quorum/releases)** — Changelog and version history
+- **[Changelog](docs/CHANGELOG.md)** — Version history and what changed
+- **[Releases](https://github.com/qinnovates/quorum/releases)** — GitHub releases with download links
 
 ## License
 
