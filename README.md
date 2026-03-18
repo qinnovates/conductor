@@ -235,6 +235,10 @@ Every report includes:
 - **Priority Actions** — Ranked by impact, not by how many agents mentioned them
 - **Blind Spots** — What the team collectively could not evaluate
 
+## What's New in v3.2.0
+
+**Security hardening release.** Removed shell access from agent manifest, added prompt injection defense to all agent templates, defined credential detection patterns, fixed privacy disclosures. [Full changelog →](docs/CHANGELOG.md)
+
 ## What's New in v3.1.0
 
 **Quorum as an epistemic quality gate.** Use one swarm to research, then a separate Quorum panel to fact-check what it found.

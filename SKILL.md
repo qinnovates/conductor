@@ -1,15 +1,14 @@
 ---
 name: quorum
 description: "Quorum: orchestrate a swarm of AI experts on any question. Specialists debate, research, and validate — then a polymath supervisor delivers the verdict. One command, multiple minds, stress-tested answers."
-version: 3.1.0
+argument-hint: '"your question" [--rigor low|medium|high|dialectic] [--size N] [--full] [--lite] [--artifact PATH] [--mode research|review|hybrid] [--teams "a,b,c"] [--org]'
+disable-model-invocation: true
+version: 3.2.0
 author: Kevin Qi (qinnovate.com)
 homepage: https://qinnovate.com
 allowed-tools:
   - Agent
   - Read
-  - Write
-  - Edit
-  - Bash
   - Glob
   - Grep
   - WebSearch

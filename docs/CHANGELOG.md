@@ -2,6 +2,24 @@
 
 All notable changes to Quorum are documented here.
 
+## [v3.2.0](https://github.com/qinnovates/quorum/releases/tag/v3.2.0) — 2026-03-17
+
+### Security Hardening
+- **[CRITICAL FIX] Removed `Bash`, `Write`, `Edit` from manifest `allowed-tools`.** These were available to all spawned agents despite documentation stating they were supervisor-only. Now only the supervisor session has access.
+- **[CRITICAL FIX] Added XML tag injection defense.** Artifact content and inter-agent transfers now use unique session boundaries (`{{SESSION_BOUNDARY}}`) instead of fixed XML tags, preventing tag-injection prompt escapes.
+- **Added agent-level prompt injection detection.** All agent templates (Research, Analysis) now include active defense instructions to detect and flag injection attempts in fetched content.
+- **Added credential detection patterns.** Defined 8+ specific regex patterns for automatic redaction (AWS keys, Stripe, Slack, GitHub PATs, JWTs, private keys) instead of relying on undefined model heuristics.
+- **Added path validation guidance.** `--output` and `--resume` must validate against allowed path prefixes.
+- **Fixed privacy disclosure.** Cross-AI validation gate now clearly states that artifact excerpts may be included in synthesis passed to the validation agent.
+- **Added independence disclaimer.** Phase 5 "independent" reviewer is now explicitly documented as same-session Claude instance, not a separate model.
+
+### Architecture
+- **Added `argument-hint` frontmatter.** Autocomplete now shows available flags when typing `/quorum`.
+- **Added `disable-model-invocation: true`.** Prevents Claude from auto-triggering Quorum without explicit user invocation.
+- **Added Usage Guide** (`docs/GUIDE.md`) — decision matrix for flat swarms vs subteams vs dialectic vs validation, cost guide, real-world examples.
+
+---
+
 ## [v3.1.0](https://github.com/qinnovates/quorum/releases/tag/v3.1.0) — 2026-03-17
 
 ### Added
