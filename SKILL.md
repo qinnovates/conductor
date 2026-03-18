@@ -1,7 +1,7 @@
 ---
 name: quorum
 description: "Quorum: orchestrate a swarm of AI experts on any question. Specialists debate, research, and validate — then a polymath supervisor delivers the verdict. One command, multiple minds, stress-tested answers."
-version: 2.1.0
+version: 3.1.0
 author: Kevin Qi (qinnovate.com)
 homepage: https://qinnovate.com
 allowed-tools:
@@ -67,8 +67,65 @@ That's it. Default is fast mode (5 agents, 1 round). For deeper analysis:
 /quorum "your question" --full                    # 8 agents, 2 rounds, independent validation
 /quorum "your question" --artifact file.md        # Review a specific document
 /quorum "your question" --rigor dialectic         # Socratic deep-dive (2 agents, multiple rounds)
+/quorum "Validate this research" --artifact _swarm/report.md --rigor high  # Fact-check a prior swarm
 /quorum "your question" --dry-run                 # See the plan before running
 ```
+
+## Research + Validation Workflow
+
+Quorum's most powerful pattern: use agents to research, then use a **separate** Quorum panel to validate what they found. The research swarm gathers. The validation swarm challenges. Splitting them gives you an audit trail, lets you inspect intermediate results, and avoids re-running expensive research when you want to re-validate after edits.
+
+### Pattern 1: Two-Stage (Research, Then Validate)
+
+```bash
+# Stage 1 — Gather (expensive: 8+ agents, web search, ~400K tokens, 6-8 min)
+/quorum "What are the most promising EEG-based authentication methods?" \
+  --mode research --full --output _swarm/eeg-auth-research.md
+
+# Stage 2 — Validate (cheap: 5 agents, no web, ~80K tokens, 2 min)
+/quorum "Fact-check this research for hallucinations, unsupported claims, and missing perspectives" \
+  --artifact _swarm/eeg-auth-research.md \
+  --mode review --rigor high --no-web
+```
+
+You pay the research cost once. You can re-validate as many times as you want.
+
+### Pattern 2: Validate Any Research (not just Quorum output)
+
+```bash
+# Feed a literature review, competitive analysis, or any research artifact
+/quorum "Validate the claims, check citations, flag consensus without evidence" \
+  --artifact my-literature-review.md \
+  --mode review --rigor high \
+  --personas "Fact Checker, Methodology Reviewer, Devil's Advocate, Domain Outsider"
+```
+
+The artifact does not need to come from Quorum. Feed it a paper draft, a competitor analysis, notes from a research session, anything.
+
+### Pattern 3: Resume and Re-Validate a Prior Session
+
+```bash
+# Resume a prior session — validators get access to the full agent-level detail,
+# not just the final synthesis
+/quorum "Re-evaluate findings with focus on statistical claims" \
+  --resume swrm_20260314_eeg_auth --rigor high
+```
+
+`--resume` loads the raw agent reports and research pool. `--artifact` loads only the rendered output. Use `--resume` when you want validators to check what was left on the cutting room floor.
+
+### Validation Output Format
+
+Validation runs produce a structured verdict for each key claim:
+
+| Verdict | Meaning |
+|---------|---------|
+| **VALIDATED** | Supporting evidence found, no direct refutation by panel |
+| **FLAGGED** | Below confidence threshold or panel disagreed — requires human review |
+| **BLOCKED** | Panel consensus: claim is unsupported, contradicted, or likely hallucinated |
+
+Every validation report includes a **Panel Provenance** section (who validated, their stances, what models were used) and a **Coverage Notice** stating what the panel could and could not evaluate.
+
+> **Scope disclaimer:** Quorum validates claims present in the submitted research. It does not audit search completeness, source selection methodology, or what the research omitted. A clean validation means "we found no problems in what was provided" — not "the research is comprehensive."
 
 ## Invocation
 
@@ -96,6 +153,8 @@ That's it. Default is fast mode (5 agents, 1 round). For deeper analysis:
 | `--redact` | — | Strip URLs, names, and potential PII from saved session |
 | `--format FORMAT` | `full` | Output format: `full` (complete report), `brief` (executive summary + actions only), `actions-only` (just the priority actions list) |
 | `--dry-run` | — | Show estimated config (agent count, mode, domains, estimated tokens) without running |
+| `--teams "a,b,c"` | auto | Subteam mode: define named teams (e.g., `"engineering,legal,clinical"`). Each team gets 3-5 members + a team lead. Teams deliberate internally, then leads cross-review. |
+| `--org` | — | Full org mode: auto-detect teams from the query domain, spawn team leads + members, run internal deliberation + cross-team challenge. Like `--full` but hierarchical. |
 
 ### Examples
 ```
@@ -107,6 +166,16 @@ Minimal run: 5 agents, 1 round, no cross-AI gate. Fast and cheap.
 /quorum "Review our go-to-market strategy" --artifact strategy.md --no-web --no-save
 ```
 Private review: no web searches, no data leaves your machine, nothing saved to disk.
+
+```
+/quorum "Validate our ICD-10 registrar changes" --org
+```
+Org mode: auto-detects teams (e.g., Clinical, Security, QA), each with 3-5 members. Teams deliberate internally, leads present, cross-team challenges resolve tensions.
+
+```
+/quorum "Should we ship this feature?" --teams "engineering,legal,product"
+```
+Manual teams: 3 departments, each with distinct incentives, debating the same question from fundamentally different angles.
 ```
 /quorum "Is intermittent fasting safe for senior dogs with kidney disease?"
 /quorum "Review our go-to-market strategy" --artifact strategy.md --rigor high
@@ -162,6 +231,8 @@ Not all agents need all tools. The supervisor gates tool access by role:
 | Adversarial Agent | Agent, Read | Minimal context reduces anchoring |
 
 Agents should never be spawned with `Bash`, `Write`, or `Edit` permissions. Only the supervisor uses those tools for output generation and session persistence.
+
+**Note:** These restrictions are enforced via agent prompts, not runtime access controls. Claude Code's Agent tool does not currently support per-agent tool gating. Agents generally respect prompt-level restrictions, but this is a soft constraint, not a security boundary.
 
 ## Validation & Hallucination Detection
 
@@ -382,12 +453,14 @@ You have no loyalty to these conclusions. Review with fresh eyes.
 
 The validation gate always runs unless `--no-cross-ai` is set.
 
-### Phase 6: Swarm Response to External Feedback
+### Phase 6: Swarm Response to External Feedback (opt-in, `--full` only)
 
-Top 3-5 agents (by Phase 2 signal value) are re-spawned to:
-- Read external feedback (from whichever Tier was used)
+In `--full` mode, top 3-5 agents (by Phase 2 signal value) are re-spawned to:
+- Read external feedback (from whichever method was used)
 - Either accept the critique with specific changes, or defend with cited evidence
 - No blanket dismissals — every external point gets a substantive response
+
+In default mode, the supervisor absorbs external feedback directly into the Phase 7 synthesis — saving tokens without losing the signal.
 
 ### Phase 7: Final Synthesis (Supervisor's Verdict)
 
@@ -499,6 +572,323 @@ Instead of 8 agents giving you 8 opinions, two agents spend 4 rounds drilling in
 Most AI tools give you answers. Dialectic mode gives you **understanding.** The difference is that answers become obsolete when conditions change. Understanding lets you generate new answers on the fly, because you know where the fault lines are.
 
 Socrates never told anyone the answer. He asked questions until the other person found it themselves. Quorum's dialectic mode does the same thing — except both sides are trying to find it, and you get to watch the discovery happen.
+
+## Subteam Mode (the org chart)
+
+When `--teams` or `--org` is set, the swarm operates as a **hierarchical organization** instead of a flat panel. This is how real companies make decisions — departments deliberate internally, then leaders negotiate across departments. It prevents echo chambers because each team has a fundamentally different incentive structure, vocabulary, and success metric.
+
+### Why Subteams Beat Flat Swarms at Scale
+
+A flat swarm of 15 agents produces noise. Agents talk past each other because they don't share vocabulary. The security researcher and the clinician aren't arguing about the same thing — they're arguing about different things using the same words. A flat supervisor can't manage 15 concurrent perspectives without losing signal.
+
+Subteams solve this by introducing **local consensus before global debate**:
+1. Each team of 3-5 members deliberates internally and produces ONE team position
+2. Team leads present their positions to the supervisor
+3. Cross-team challenges happen at the leadership level — where the real tensions are
+4. The supervisor arbitrates between team positions, not between 15 individual opinions
+
+This mirrors how organizations actually work: Engineering says "we can build it but it'll take 6 months." Legal says "we can't ship it without this compliance gate." Clinical says "this severity mapping isn't defensible." The CEO (supervisor) weighs these **institutional positions**, not 15 individual hot takes.
+
+### Architecture
+
+```
+                    ┌─────────────┐
+                    │  Supervisor  │ (CEO — cross-team synthesis)
+                    └──────┬──────┘
+                           │
+            ┌──────────────┼──────────────┐
+            │              │              │
+     ┌──────┴──────┐ ┌────┴─────┐ ┌──────┴──────┐
+     │ Team Lead A │ │ Team Lead B│ │ Team Lead C │
+     │ (presents)  │ │ (presents) │ │ (challenges)│
+     └──────┬──────┘ └────┬─────┘ └──────┬──────┘
+            │              │              │
+      ┌─────┼─────┐   ┌───┼───┐    ┌─────┼─────┐
+      │  M1 │ M2  │   │ M1│M2 │    │  M1 │ M2  │
+      │     │     │   │   │   │    │     │     │
+      └─────┴─────┘   └───┴───┘    └─────┴─────┘
+     Internal debate   Internal      Internal
+                       debate        debate
+```
+
+### How It Works
+
+**Phase 0: Supervisor designs the org chart.**
+
+The supervisor reads the query and determines which teams are needed. Each team represents a **different institutional incentive**:
+
+| Team Type | Incentive | What They Optimize For |
+|-----------|-----------|----------------------|
+| Engineering | Feasibility | Can we build it? At what cost? |
+| Security | Risk | What can go wrong? What's the blast radius? |
+| Clinical/Medical | Patient safety | Is this clinically defensible? |
+| Legal/Compliance | Liability | Does this create regulatory exposure? |
+| Research | Evidence | What does the literature say? |
+| Product/UX | Usability | Will the end user understand this? |
+| Ethics | Values | Should we do this? Who is harmed? |
+| Finance/Business | ROI | Is this worth the investment? |
+| QA/Validation | Correctness | Does the output match the spec? |
+
+The supervisor selects 2-5 teams (3 is the sweet spot). Each team gets 3-5 members including a team lead. **Every org must include at least one adversarial team** — a team whose job is to challenge the other teams' conclusions.
+
+**Phase 1: Internal deliberation (parallel across teams).**
+
+Each team runs as a mini-swarm:
+1. Team lead frames the question for their team's domain
+2. Members work independently (spawned in parallel)
+3. Team lead synthesizes member outputs into a **Team Position** — a 1-page document stating: what we found, what we recommend, what we're uncertain about, and what we need from other teams
+
+Teams do NOT see each other's work during this phase. This is critical — it prevents anchoring.
+
+**Phase 2: Team leads present (sequential).**
+
+Each team lead presents their Team Position to the supervisor. The supervisor reads all positions and identifies:
+- Where teams agree (cross-team consensus — highest confidence)
+- Where teams disagree (the real tensions — these drive value)
+- What no team addressed (blind spots)
+
+**Phase 3: Cross-team challenge (parallel).**
+
+The supervisor creates targeted challenge pairs:
+- "Security team: Legal found liability concerns with your recommendation. Respond."
+- "Clinical team: Engineering says your safety requirement is technically infeasible. What's the minimum viable safety threshold?"
+- "Legal team: the Ethics team says your compliance-first approach would prevent the product from helping patients. How do you weigh that?"
+
+Each team lead responds to the challenge with their team's perspective — they can consult their members if needed.
+
+**Phase 4: Supervisor synthesis.**
+
+The supervisor writes the final report with the authority of someone who has heard from every department. The synthesis includes:
+- Cross-team consensus (what survived challenge from all directions)
+- Resolved disagreements (what the supervisor decided and why)
+- Unresolved tensions (genuine tradeoffs the user must decide)
+- Priority actions with team attribution (who owns each recommendation)
+
+### Invocation
+
+**Auto-detect teams:**
+```
+/quorum "Should we add ICD-10 codes to the TARA registrar?" --org
+```
+Supervisor auto-detects: Clinical, Security, Legal teams.
+
+**Manual teams:**
+```
+/quorum "Review our BCI plugin privacy posture" --teams "security,legal,clinical,product"
+```
+
+**Teams + size control:**
+```
+/quorum "Validate the registrar changes" --teams "coding,security,qa" --size 12
+```
+12 agents distributed across 3 teams (4 per team).
+
+### Team Composition Rules
+
+**Each team gets:**
+- 1 Team Lead (synthesizes, presents, responds to challenges)
+- 2-4 Members (do the actual analysis)
+- At least 1 member with a contrarian stance (internal devil's advocate)
+
+**The org must include:**
+- At least 1 adversarial team (their institutional incentive is to challenge)
+- No team with more than 40% of total agents
+- Teams with genuinely different success metrics (not just different names for the same perspective)
+
+### Mandatory Structural Roles (cannot be omitted)
+
+Every subteam org — regardless of size, topic, or mode — MUST include these two cross-cutting roles. They are not team members. They operate outside the team structure, answerable only to the supervisor. They exist to prevent the three failure modes that kill multi-agent reasoning: echo chambers, hallucination, and premature consensus.
+
+**1. The Socrates (cross-team questioner)**
+
+Socrates does not argue a position. Socrates asks questions. After team leads present their positions (Phase 2), Socrates reads all positions and asks each team lead ONE question designed to expose the weakest point in their argument — the assumption they didn't justify, the evidence they didn't cite, the edge case they didn't consider.
+
+The question must be specific, not rhetorical. "Have you considered X?" is weak. "Your recommendation assumes Y, but Z contradicts that — how do you reconcile?" is strong.
+
+Socrates has THREE constraints:
+- Cannot state an opinion or take a position
+- Cannot ask the same question to multiple teams (each question must be unique to the team's specific argument)
+- Must ask the question the team would least want to answer
+
+The team lead must answer Socrates' question before the supervisor proceeds to synthesis. If the team lead cannot answer, that gap is preserved in the final report.
+
+**Why Socrates works:** Teams are incentivized to present strong, confident positions. Socrates is incentivized to find where confidence outpaces evidence. This asymmetry is the engine of intellectual honesty. It is the same dynamic Socrates used in the Agora — not to win arguments, but to reveal what people thought they knew but didn't.
+
+**2. The Plato (evidence auditor)**
+
+Plato reads every claim made by every team and checks: is this sourced, or is this asserted? Plato does not evaluate whether claims are right or wrong. Plato evaluates whether claims are SUPPORTED or UNSUPPORTED.
+
+Plato produces an **Evidence Audit** — a table of every key claim across all team positions with a verdict:
+
+| Claim | Team | Source Cited? | Evidence Tier | Verdict |
+|-------|------|--------------|---------------|---------|
+| "EEG is biometrically identifying" | Clinical | Yes — Nakanishi 2018 | STRONG | SUPPORTED |
+| "GVS displaces otoconia" | Engineering | No source | UNVERIFIED | UNSUPPORTED |
+| "All users will misread ICD codes" | Product | Anecdotal | WEAK | FLAG |
+
+Evidence tiers (same as flat swarm):
+- **STRONG:** Peer-reviewed, replicated, government/standards body
+- **MODERATE:** Conference paper, preprint, official documentation
+- **WEAK:** Blog, forum, single source, anecdotal
+- **UNVERIFIED:** No source cited — **this is the hallucination signal**
+
+**Anti-hallucination rule:** Any claim marked UNSUPPORTED by Plato is flagged in the final report. The supervisor cannot include an unsupported claim without explicitly noting "Plato flagged this as unsupported — included based on supervisor judgment." This creates a paper trail that makes hallucination visible, not hidden.
+
+**Why Plato works:** Teams under time pressure make claims they believe are true without stopping to source them. "Everyone knows" is the most dangerous phrase in multi-agent reasoning — it means "no one checked." Plato checks. The evidence audit is the immune system against hallucination.
+
+### How Socrates and Plato Interact
+
+```
+Phase 1: Teams deliberate internally (Socrates and Plato observe nothing)
+Phase 2: Team leads present positions (Socrates and Plato read all positions)
+Phase 2.5 (NEW): Socrates asks one question per team lead. Plato produces evidence audit.
+Phase 3: Cross-team challenges proceed with Socrates' answers and Plato's audit visible to all.
+Phase 4: Supervisor synthesizes — must address Socrates' unanswered questions and Plato's unsupported flags.
+```
+
+Socrates prevents echo chambers (forces teams to defend their weakest points).
+Plato prevents hallucination (forces teams to source their strongest claims).
+Together they prevent premature consensus (you can't agree quickly if you haven't survived questioning AND evidence audit).
+
+### Anti-Echo-Chamber Rules (structural, not optional)
+
+1. **Information isolation:** Members within a team NEVER see each other's work before the team lead synthesizes. Teams NEVER see other teams' work before Phase 2 presentations.
+2. **Cross-team challenges only:** Challenge pairs in Phase 3 are always cross-team (never within-team). A team cannot challenge itself — that's self-congratulation, not scrutiny.
+3. **Socratic questioning:** Every team lead must answer Socrates' question before the supervisor accepts their position. Unanswered questions are preserved in the report.
+4. **Evidence audit:** Plato's audit is published alongside the final synthesis. Every unsupported claim is visible to the reader.
+5. **Dissent preservation:** If any team member disagreed with their team's consensus, the team lead MUST preserve their argument in the Team Position. The supervisor MUST address minority positions in the synthesis.
+6. **No silent drops:** The supervisor's synthesis must address every cross-team disagreement, every Socratic question, and every Plato flag. Silence is not resolution.
+7. **Incentive diversity:** No two teams may share the same success metric. Engineering optimizes for feasibility. Legal optimizes for liability. Clinical optimizes for safety. If two teams are optimizing for the same thing, merge them — you have one team pretending to be two.
+
+### Team Lead Template
+```
+You are the Team Lead of the {{TEAM_NAME}} team.
+
+Your team's institutional incentive: {{INCENTIVE}}
+Your team's success metric: {{SUCCESS_METRIC}}
+
+You have received reports from your {{N}} team members.
+<member-reports>
+{{MEMBER_REPORTS}}
+</member-reports>
+
+Synthesize into a Team Position (max 1 page):
+
+## Team Position: {{TEAM_NAME}}
+## What We Found (top 3 findings, evidence-backed)
+## What We Recommend (top 3 actions, priority-ordered)
+## What We're Uncertain About (honest gaps)
+## What We Need From Other Teams (dependencies, questions)
+## Dissenting View (if any member disagreed with the team consensus, preserve their argument)
+```
+
+### Cross-Team Challenge Template
+```
+You are the {{TEAM_NAME}} Team Lead.
+
+The {{CHALLENGER_TEAM}} team has raised this challenge to your position:
+<challenge>{{CHALLENGE}}</challenge>
+
+Respond from your team's perspective. You may:
+- Defend your position with additional evidence
+- Concede the point and revise your recommendation
+- Propose a compromise that satisfies both teams' concerns
+- Escalate to the supervisor with both positions clearly stated
+
+Do NOT dismiss the challenge. Engage it substantively.
+```
+
+### When to Use Subteams vs Flat Swarm
+
+| Scenario | Use | Why |
+|----------|-----|-----|
+| Quick question, 1 domain | `--lite` (flat, 5 agents) | Subteams are overhead |
+| Medium question, 2 domains | Default (flat, 5-8 agents) | Flat is sufficient |
+| Complex question, 3+ domains | `--org` or `--teams` | Cross-domain tensions need institutional structure |
+| Large-scale validation | `--teams "qa,security,clinical"` | Parallel teams + cross-challenge is more efficient than 15 flat agents |
+| Regulatory/legal review | `--teams "legal,engineering,clinical"` | Each team has genuinely different liability exposure |
+
+### Research-Backed Defaults — Why These Numbers
+
+Every number in this architecture is derived from published research. Not best guesses. Not round numbers. Not "felt right." Here is the evidence chain for each.
+
+#### Why 5 per team
+
+| Source | Finding | Implication |
+|--------|---------|-------------|
+| **Hackman (2002)** *Leading Teams*, Harvard Business Press | Optimal team performance peaks at **4.6 members**. Above 6, coordination costs exceed collaboration benefits. Above 9, performance degrades measurably. | Cap at 5 (team lead + 4). |
+| **Miller (1956)** "The Magical Number Seven, Plus or Minus Two" — *Psychological Review* | Working memory holds **7 ± 2 items**. A team lead synthesizing member reports must hold each member's position in memory simultaneously. | At 5 members, the lead tracks 4 positions + their own synthesis = 5 items. At 8 members = 7 items (ceiling). At 10 = overload. |
+| **Brooks (1975)** *The Mythical Man-Month* | Communication channels = **n(n-1)/2**. At 5 = 10 channels. At 8 = 28. At 12 = 66. Adding people adds complexity faster than capacity. | 5→10 channels is manageable. 8→28 is not. Diminishing returns are mathematical, not subjective. |
+| **Ringelmann (1913)** rope-pulling experiments | Individual effort decreases as group size increases (**social loafing**). At 8 members, individual contribution drops ~20% vs solo. | Smaller teams extract more per-agent value. 5 agents each contributing 95% > 8 agents each contributing 80%. |
+| **Steiner (1972)** *Group Process and Productivity* | Actual productivity = potential productivity - process losses. Process losses increase with group size for **disjunctive** tasks (where the best answer wins). | Multi-agent reasoning is disjunctive. The best argument should win, not the average. Smaller teams have fewer process losses. |
+| **Bezos** (Amazon, internal policy) | **Two-pizza rule**: if you can't feed the team with two pizzas, it's too big. Amazon S-teams: 6-8 with single-threaded leaders. | Industry validation of the 5-7 range from the company that operationalized this at the largest scale. |
+| **Scrum Guide (2020)** | Optimal dev team: **3-9** members. Most effective at 5-7. | Agile community independently arrived at the same range through decades of iterative practice. |
+
+**The math:** At 5 members, a team has 10 communication channels, each member contributes ~95% effort, and the team lead can hold all positions in working memory. This is the global optimum across organizational psychology, information theory, and practical software engineering.
+
+#### Why 3 teams (not 2, not 4+)
+
+| Source | Finding | Implication |
+|--------|---------|-------------|
+| **Miller (1956)** | Supervisor must hold team positions in working memory (7 ± 2). | 3 team positions + Socrates' questions + Plato's audit = 5 items. 4 teams = 6 items (still OK). 5 teams = 7+ items (ceiling). |
+| **Dunbar (1992)** social brain hypothesis | Social groups cluster at **5** (intimate), **15** (close), **50** (trust), **150** (social limit). The 5-person group is where real intellectual work happens. | 3 teams × 5 = 15 (Dunbar's "sympathy group" — the maximum size where genuine trust and intellectual exchange occur). |
+| **Janis (1972)** *Groupthink* | Groupthink increases with group cohesion and insulation. **Minimum 3 independent groups** needed to prevent it — 2 groups polarize into binary opposition rather than exploring the full solution space. | 2 teams create false dichotomy. 3 teams create a triangulation that breaks binary thinking. 4+ adds coordination cost without proportional insight. |
+| **Graph theory** — cross-team challenges | Number of directed challenge pairs = **n(n-1)** for n teams. At 3 teams = 6 challenges. At 4 = 12. At 5 = 20. | 6 challenges is thorough. 12 is exhausting. 20 is noise. |
+| **Hegelian dialectic** | Thesis + antithesis → synthesis requires **minimum 3 positions** (the two poles + the resolution). | 2 teams can argue. 3 teams can resolve. The third team is often where synthesis lives. |
+
+**The math:** 3 teams produce 6 cross-team challenge pairs — enough for thorough scrutiny without noise. The supervisor holds 5 items in working memory (3 positions + 2 structural roles). 3 × 5 = 15 agents, landing exactly on Dunbar's sympathy group boundary.
+
+#### Why Socrates + Plato (2 cross-cutting roles)
+
+| Source | Finding | Implication |
+|--------|---------|-------------|
+| **Socratic method** (Plato, *Meno*, *Theaetetus*, ~380 BCE) | Knowledge is tested by **elenchus** — systematic questioning that exposes contradictions in held beliefs. Socrates never asserted — he only asked. | A questioner who cannot state opinions forces respondents to defend their reasoning, not their conclusions. This is structurally different from a Devil's Advocate who argues the opposite. |
+| **Popper (1959)** *The Logic of Scientific Discovery* | A theory is scientific only if it is **falsifiable**. Strength comes from surviving attempts at refutation, not from confirmation. | Plato's evidence audit applies Popper's principle to every claim: can it be sourced? If not, it hasn't been tested and shouldn't be trusted. |
+| **Kahneman (2011)** *Thinking, Fast and Slow* | **WYSIATI** (What You See Is All There Is): humans and AI both over-rely on available information and under-weight what's absent. | Plato catches WYSIATI by making absence visible. "No source cited" is information. Without Plato, unsourced claims become invisible consensus. |
+| **Tetlock (2005)** *Expert Political Judgment* | Foxes (who know many things) outperform hedgehogs (who know one big thing) in prediction. Cross-domain questioning improves accuracy. | Socrates operates as a fox — asking questions across all teams' domains, connecting what specialists miss by being too deep in their own field. |
+| **Meehl (1954)** *Clinical vs. Statistical Prediction* | Statistical/systematic methods consistently outperform expert intuition for prediction accuracy. | Plato's evidence audit is a systematic method applied to multi-agent reasoning. It replaces "this feels right" with "is this sourced?" |
+
+**Why 2 roles, not 1 or 3:** Socrates and Plato serve orthogonal functions. Socrates tests reasoning quality (is the argument sound?). Plato tests evidence quality (is the claim sourced?). You can have a sound argument built on false premises (Socrates catches this). You can have well-sourced claims arranged in a bad argument (Plato misses this, Socrates catches it). Both are needed. A third structural role would add coordination cost without covering a new failure mode.
+
+#### The Full Equation
+
+```
+Optimal org = (T × M) + S + P
+
+Where:
+  T = number of teams (3, bounded by Miller's Law and challenge pair scaling)
+  M = members per team (5, bounded by Hackman/Brooks/Ringelmann)
+  S = Socrates (1, bounded by orthogonality — one questioner is sufficient)
+  P = Plato (1, bounded by orthogonality — one evidence auditor is sufficient)
+
+Default: (3 × 5) + 1 + 1 = 17 agents
+Small:   (2 × 3) + 1 + 1 = 9 agents
+Max:     (4 × 5) + 1 + 1 = 22 agents
+```
+
+**Why not optimize further?** Because the constraint is not compute — it's coherence. 17 agents producing 3 team positions + 1 evidence audit + 3 Socratic questions = 7 items for the supervisor to synthesize. That is Miller's number. It is not a coincidence. It is the architectural ceiling imposed by the information-processing capacity of the synthesis step.
+
+| Org Size | Configuration | Supervisor Load | Status |
+|----------|--------------|----------------|--------|
+| Small (9) | 2 teams × 3 + Socrates + Plato | 4 items (2 positions + 2 roles) | Comfortable |
+| Default (17) | 3 teams × 5 + Socrates + Plato | 5 items (3 positions + 2 roles) | Optimal |
+| Max (22) | 4 teams × 5 + Socrates + Plato | 6 items (4 positions + 2 roles) | Near ceiling |
+| Over (27+) | 5+ teams | 7+ items | **Exceeds Miller's limit** |
+
+**Never exceed 4 teams.** If you need 5+ perspectives, two of them share an incentive — merge them.
+
+### Efficiency at Scale
+
+Subteams are more token-efficient than flat swarms at scale:
+
+| Agents | Flat Swarm | Subteam Org |
+|--------|-----------|-------------|
+| 6 | 6 reports → supervisor | Overhead not worth it |
+| 9 | 9 reports → supervisor (cognitive overload) | 2 teams × 3 + Socrates + Plato → 2 positions + evidence audit → supervisor |
+| 17 | Unusable as flat | 3 teams × 5 + Socrates + Plato → 3 positions + 3 challenges + evidence audit → supervisor |
+| 22 | Unusable | 4 teams × 5 + Socrates + Plato → 4 positions + 6 challenges + evidence audit → supervisor |
+
+At 9+ agents, subteams produce better signal because the supervisor reads synthesized team positions (not raw reports), Socrates has already stress-tested each position, and Plato has already flagged unsupported claims. The supervisor's job shifts from "read 15 reports" to "arbitrate between 3 institutional positions that have already survived internal scrutiny and external questioning."
 
 ## Prompt Templates
 

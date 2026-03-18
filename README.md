@@ -45,6 +45,9 @@ claude install qinnovates/quorum
 # Deep Socratic exploration
 /quorum "Should we open-source our core product?" --rigor dialectic
 
+# Fact-check a prior research swarm
+/quorum "Validate this research" --artifact _swarm/report.md --rigor high
+
 # See the plan before running
 /quorum "your question" --dry-run
 ```
@@ -200,6 +203,16 @@ It's not a developer tool. It's a thinking tool. Any question where you'd want a
 **Research deep-dive:**
 ```
 /quorum "What are the most promising approaches to Alzheimer's early detection?" --mode research --full
+```
+
+**Validate research (two-stage pattern):**
+```bash
+# Stage 1 — Research (expensive, runs once)
+/quorum "EEG-based authentication methods" --mode research --full --output _swarm/eeg-auth.md
+
+# Stage 2 — Validate (cheap, re-run as needed)
+/quorum "Fact-check for hallucinations and unsupported claims" \
+  --artifact _swarm/eeg-auth.md --mode review --rigor high --no-web
 ```
 
 **Document review:**
