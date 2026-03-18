@@ -133,6 +133,43 @@ Quorum runs a multi-phase pipeline. You don't need to understand this to use it 
 6. **Validation** — Independent reviewer challenges the synthesis
 7. **Final report** — What survived, what's disputed, what to do next
 
+## Flat vs Hierarchy — When to Use What
+
+Most multi-agent tools are flat: split a task, hand each piece to an agent, merge. That works for 5 agents on a focused question. It falls apart at 12+ agents on a cross-domain question — a security researcher and a clinician aren't arguing about the same thing, they're arguing about different things using the same words. A flat supervisor managing 15 individual perspectives loses signal fast.
+
+Quorum scales in three tiers:
+
+| Mode | Agents | Structure | When to Use |
+|------|--------|-----------|-------------|
+| **Flat** (`--lite`, default) | 3-8 | Single panel, everyone debates everyone | Focused questions in 1-2 domains |
+| **Subteam** (`--teams`) | 9-17 | Named teams deliberate internally, leads cross-challenge | Questions crossing 3+ domains with different incentives |
+| **Org** (`--org`) | 17+ | Full hierarchy: teams + Socrates + Plato | High-stakes decisions, regulatory review, research synthesis |
+
+**Why hierarchy beats flat at scale:**
+
+- **15 flat agents** produce 15 reports. The supervisor reads all 15, loses nuance, defaults to vote-counting. Echo chambers form because everyone sees similar context.
+- **3 teams of 5** produce 3 team positions. Each team has internal debate first (local consensus), then team leads present to the supervisor. Cross-team challenges happen at the leadership level where the real tensions are. The supervisor arbitrates between 3 institutional positions — not 15 individual hot takes.
+
+**Two structural roles appear only in subteam/org mode:**
+
+- **Socrates** asks each team lead ONE question — the one they'd least want to answer. Cannot state an opinion. Forces teams to defend their weakest point. Prevents echo chambers.
+- **Plato** audits every claim across all teams: is it sourced or asserted? Produces an evidence audit table. Any unsupported claim is flagged in the final report. Prevents hallucination.
+
+Together, Socrates prevents echo chambers (forces teams to defend their weakest points) and Plato prevents hallucination (forces teams to source their strongest claims). You can't agree quickly if you haven't survived questioning AND evidence audit.
+
+```bash
+# Focused question — flat is perfect
+/quorum "Should we use Rust or Go for our CLI?"
+
+# Cross-domain — subteams needed
+/quorum "Review our BCI security posture" --teams "engineering,legal,clinical"
+
+# High-stakes research synthesis — full org
+/quorum "Validate the receptor expansion research" --org --rigor high
+```
+
+**[Full guide: when to use flat vs subteams vs dialectic →](docs/GUIDE.md)**
+
 ## What Makes Quorum Different
 
 Every multi-agent tool in the Claude Code ecosystem does the same thing: splits a task, hands each piece to an agent, collects answers, merges them. More hands, same brain. If all 8 agents hallucinate the same thing, you get a confident, well-formatted wrong answer.
