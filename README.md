@@ -235,12 +235,31 @@ Every report includes:
 - **Priority Actions** — Ranked by impact, not by how many agents mentioned them
 - **Blind Spots** — What the team collectively could not evaluate
 
+## What's New in v3.1.0
+
+**Quorum as an epistemic quality gate.** Use one swarm to research, then a separate Quorum panel to fact-check what it found.
+
+```bash
+# Stage 1 — Gather (expensive, once)
+/quorum "EEG auth methods" --mode research --full --output _swarm/eeg-auth.md
+
+# Stage 2 — Validate (cheap, re-run as needed)
+/quorum "Fact-check for hallucinations" --artifact _swarm/eeg-auth.md --rigor high --no-web
+```
+
+**Three-tier verdicts:** Every validated claim exits as **VALIDATED** (evidence found), **FLAGGED** (needs human review), or **BLOCKED** (unsupported/contradicted). Panel provenance and coverage notices included in every report.
+
+Works on any research — not just Quorum output. Feed it a paper draft, competitor analysis, literature review, anything.
+
+[Full release notes →](https://github.com/qinnovates/quorum/releases/tag/v3.1.0)
+
 ## Documentation
 
 - **[Architecture](docs/ARCHITECTURE.md)** — Full phase-by-phase technical specification
 - **[Prompt Templates](docs/PROMPTS.md)** — All agent templates with variable reference
 - **[Safety & Privacy](docs/SAFETY.md)** — Guardrails, privacy disclosure, tool permissions
 - **[Privacy Policy](https://qinnovate.com/privacy)** — Full privacy policy for all qinnovate tools
+- **[Releases](https://github.com/qinnovates/quorum/releases)** — Changelog and version history
 
 ## License
 
