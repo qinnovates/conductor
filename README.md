@@ -253,6 +253,18 @@ Every report includes:
 - **Priority Actions** — Ranked by impact, not by how many agents mentioned them
 - **Blind Spots** — What the team collectively could not evaluate
 
+## What's New in v4.1.0
+
+**Divergence Engine + Security Hardening + SKILL.md split (1490 → 250 lines).**
+
+- **Provocateur archetype** — challenges whether the question itself is right
+- **EXPLORE mode** — for meta-questions ("What am I missing?"), each agent reframes instead of analyzes
+- **Structural protections** — adversarial agents immune to pruning, Socratic follow-ups (2-3 per team), refutation resistance replaces confidence scores
+- **Security:** injection defense on all templates, profile poisoning prevention, scoped file access
+- **SKILL.md:** split from 1490 to 250 lines. Architecture details moved to docs/. Progressive loading.
+
+[Full changelog →](docs/CHANGELOG.md)
+
 ## What's New in v4.0.0
 
 **Adaptive Intelligence.** Quorum now reads your project before configuring. No more flat-5 defaults.

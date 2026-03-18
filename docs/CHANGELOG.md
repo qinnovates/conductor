@@ -2,6 +2,28 @@
 
 All notable changes to Quorum are documented here.
 
+## [v4.1.0](https://github.com/qinnovates/quorum/releases/tag/v4.1.0) — 2026-03-17
+
+### Security
+- Fixed injection defense gap in ARCHITECTURE.md templates (Cross-Review, Devil's Advocate, Phase 5 reviewer)
+- Added profile sanitization for project profile poisoning prevention
+- Added injection defense to Provocateur archetype
+- Scoped adversarial agent file access to project directory
+
+### Architecture
+- **SKILL.md split:** 1490 lines → 250 lines. All architecture, templates, and deep-dive content moved to docs/. SKILL.md is now user-facing only with progressive loading references.
+- **Divergence Engine:** Provocateur archetype, EXPLORE mode, preserve-if-unique triage, creative disruption check, research partition overlap
+- **Structural Protections (enforced):** Adversarial immunity, Socratic follow-ups (2-3 per team), refutation resistance (replaces confidence scores), Socratic Remainder, inverted early termination
+- **Anti-boxing:** Condition-based outsider injection (replaces counter-based), exploration signal in Socratic Gate, Contestability replaces Falsifiability
+- Added EXPLORE mode to GUIDE.md with Provocateur documentation
+
+### Changed
+- Version bump 4.0.0 → 4.1.0
+- Socratic Gate: 5 dimensions → 6 (added Exploration signal)
+- Socratic Gate: Falsifiability → Contestability (supports normative questions)
+
+---
+
 ## [v4.0.0](https://github.com/qinnovates/quorum/releases/tag/v4.0.0) — 2026-03-17
 
 ### Added — Adaptive Intelligence

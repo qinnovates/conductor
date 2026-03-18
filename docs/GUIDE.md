@@ -440,6 +440,48 @@ Every validation report includes **Panel Provenance** (who validated, their stan
 
 ---
 
+## EXPLORE Mode (for meta-questions)
+
+When the Socratic Gate detects a meta-question, reframing request, or exploratory query ("What am I missing?", "What if we're wrong?", "What haven't I thought about?"), it auto-routes to EXPLORE mode.
+
+### How EXPLORE differs from other modes
+
+| Property | Standard Modes | EXPLORE Mode |
+|----------|---------------|--------------|
+| Agent assignment | Each agent gets a stance on the same question | Each agent gets a *different reframing* of the question |
+| Goal | Find the best answer | Find the best question |
+| Triage | Prune low-signal agents | Preserve all unique framings |
+| Early termination | On consensus | Never — convergence is the enemy |
+| Supervisor synthesis | "The answer is X" | "The most productive reframing is X because Y" |
+| Default size | Score-based | 6-8 minimum |
+
+### The Provocateur
+
+EXPLORE mode features the **Provocateur** archetype — an agent whose job is not to analyze the question but to find a better one:
+
+- What assumption is everyone making that might be wrong?
+- What adjacent problem would be more valuable to solve?
+- What would the answer look like if the question itself is the problem?
+
+The Provocateur is exempt from Plato's evidence audit (reframings are not empirical claims) and immune to LOW-signal pruning. Their value is assessed on uniqueness, not evidence quality.
+
+### Example
+
+```bash
+/quorum "What am I missing about our approach to neural data privacy?"
+```
+
+Instead of 5 agents analyzing the privacy approach as stated, EXPLORE mode spawns 6-8 agents who each reframe the question differently. One might ask "Is this a privacy problem or an ownership problem?" Another: "What if the real risk isn't data theft but data inference?" The supervisor synthesizes which reframing opens the most productive inquiry.
+
+### When to use EXPLORE
+
+- You feel stuck and don't know why
+- You suspect you're asking the wrong question
+- You want perspectives you haven't considered
+- You want to challenge your own assumptions
+
+---
+
 ## Combining Modes
 
 Modes compose. Stack them for maximum rigor.
