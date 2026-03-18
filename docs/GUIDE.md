@@ -4,6 +4,135 @@
 
 ---
 
+## Quorum's Tier Architecture
+
+Quorum is not a flat system. It operates as a **tiered hierarchy** where each tier serves a different epistemological function. Understanding the tiers explains why a 3-agent lite swarm and a 17-agent org produce fundamentally different kinds of answers — not just more or less of the same thing.
+
+### The 5 Tiers
+
+```
+Tier 0: Context Engine (reads project, classifies task, auto-configures)
+  │
+Tier 1: Supervisor (polymath orchestrator — designs the debate, writes the verdict)
+  │
+Tier 2: Structural Roles (Socrates questions, Plato audits — cross-cutting, no position)
+  │
+Tier 3: Team Leads / Analysis Agents (domain experts — take positions, debate, synthesize)
+  │
+Tier 4: Research Agents / Team Members (evidence gatherers — search, cite, report)
+```
+
+**Each tier has a distinct job. No tier does the work of another.**
+
+### Tier 0: Context Engine (Pre-Phase 0)
+
+**Job:** Read the project, classify the task, configure the swarm.
+
+This tier runs before any agent is spawned. It reads the project profile, scores the query on 4 dimensions (domain count, certainty demand, scope, artifact), and selects mode, agent count, structure, and rigor. It shows the Config Transparency Block so the user can approve or override.
+
+Tier 0 is the only tier that talks to the user before the swarm runs. Every other tier works internally.
+
+**What it does NOT do:** Tier 0 does not analyze the question. It does not form an opinion. It configures the instrument — it does not play it.
+
+### Tier 1: Supervisor (Phase 0-7)
+
+**Job:** Design the intellectual structure of the debate, make executive calls, write the synthesis.
+
+The supervisor is a polymath — not an expert in any single domain, but capable of understanding any domain well enough to ask the right questions. The supervisor:
+
+- Decides what the real question is (often different from the literal words)
+- Picks which experts to spawn and what positions they should argue
+- Engineers the collision points — where will experts disagree productively?
+- Reads all agent outputs and writes the final synthesis with editorial judgment
+- Weighs reasoning quality over vote counts — a well-argued minority beats a hand-waving majority
+
+**The supervisor is the most important agent.** Every other agent produces raw material. The supervisor produces the answer.
+
+**What it does NOT do:** The supervisor does not search the web, does not take a domain position, and does not defend a stance. If the supervisor starts arguing with its own agents, the architecture has failed.
+
+### Tier 2: Structural Roles (Socrates + Plato)
+
+**Job:** Prevent the three failure modes of multi-agent reasoning.
+
+Structural roles are not experts. They do not take positions. They operate orthogonally to the content debate:
+
+**Socrates** prevents echo chambers. After team leads present their positions, Socrates asks each lead ONE question targeting the weakest point in their argument. The question must be specific, not rhetorical. Socrates cannot state an opinion. The team lead must answer before the supervisor proceeds.
+
+**Plato** prevents hallucination. Plato reads every claim from every team and checks: is this SOURCED or ASSERTED? Plato does not evaluate whether claims are right or wrong — only whether they are supported by evidence. The Evidence Audit table makes unsupported claims visible.
+
+**Why they are separate from Tier 3:** Domain experts (Tier 3) are incentivized to build strong positions. Socrates and Plato are incentivized to dismantle weak ones. Mixing these incentives in the same agent produces agents that half-argue and half-question — doing neither well.
+
+**When they appear:** Socrates and Plato only appear in subteam/org mode (9+ agents). In flat swarms, the Devil's Advocate partially fills this role, but without the structural separation.
+
+### Tier 3: Team Leads / Analysis Agents
+
+**Job:** Take positions, argue them with evidence, debate each other.
+
+In flat swarms, these are individual analysis agents — each with a unique persona, stance, and seed questions. They work independently, then cross-review each other's positions.
+
+In subteam/org mode, these are **Team Leads** who synthesize their team members' work into a single Team Position, then present to the supervisor and respond to cross-team challenges.
+
+**Key principle:** Tier 3 agents are assigned positions, not asked for opinions. The supervisor tells them what stance to argue and from what framework. This is deliberate — unassigned agents converge on the same comfortable consensus. Assigned positions force the swarm to explore the full solution space.
+
+**What they do NOT do:** Tier 3 agents do not search the web (that's Tier 4). They do not question the overall structure (that's Tier 2). They argue their assigned domain with the evidence they're given.
+
+### Tier 4: Research Agents / Team Members
+
+**Job:** Gather evidence. Search, cite, report.
+
+Research agents get non-overlapping search partitions (different sources, different facets, different date ranges) to prevent duplication. They produce structured findings with sources, evidence tiers, and conflict notes.
+
+Team members in org mode work similarly — each assigned a unique angle within their team's domain. Their output goes to the Team Lead (Tier 3), not directly to the supervisor.
+
+**Key principle:** Tier 4 agents see the least context. They know their search partition and the topic. They do not know what other agents found, what the supervisor is thinking, or what conclusion is forming. This isolation prevents anchoring — they can't be biased by information they don't have.
+
+**What they do NOT do:** Tier 4 agents do not interpret their findings. They do not recommend actions. They report what they found and what they didn't find. Interpretation is Tier 3's job.
+
+### How the Tiers Interact
+
+```
+Tier 0: "This is an iOS accessibility project asking about authentication.
+         Score: D=2 C=2 S=1 A=0 → 5. Config: 6 agents, flat, medium rigor."
+
+Tier 1 (Supervisor): "The real question is device-level auth for embedded hardware.
+         I'll spawn: Security Architect, iOS Engineer, Accessibility Expert,
+         Hardware Auth Specialist, Devil's Advocate, Domain Outsider (economist)."
+
+Tier 4 (Research): [2 agents search different sources, return evidence pool]
+
+Tier 3 (Analysis): [4 agents argue positions from their domains using the evidence]
+         Security Architect: "mTLS with hardware-bound certs"
+         iOS Engineer: "Sign in with Apple, it's built-in"
+         Accessibility Expert: "Biometric + VoiceOver passthrough"
+         Devil's Advocate: "All three assume a reliable network connection"
+
+Tier 2 (Socrates): "Security Architect — your mTLS recommendation assumes
+         the device has a TPM. Does this hardware have one?"
+         (Plato): "Accessibility Expert's claim about VoiceOver passthrough
+         latency is UNSUPPORTED — no source cited."
+
+Tier 1 (Supervisor): [Reads all positions, Socrates' questions, Plato's audit]
+         Synthesis: "Hardware-bound tokens with biometric fallback.
+         mTLS is correct but requires TPM verification first.
+         VoiceOver passthrough needs latency benchmarking before commit."
+```
+
+### Why Tiers Beat Flat
+
+| Property | Flat (5 agents) | Tiered (17 agents, org) |
+|----------|----------------|------------------------|
+| Information flow | Everyone sees everything → anchoring | Controlled: each tier sees what it needs |
+| Disagreement quality | Agents with different names agree on the same thing | Teams with different incentives surface real tensions |
+| Evidence handling | Mixed with opinions in the same agent output | Separated: Tier 4 gathers, Tier 3 interprets, Tier 2 audits |
+| Hallucination detection | Devil's Advocate might catch it | Plato systematically audits every claim |
+| Minority positions | Easily drowned by majority | Protected: Socrates forces engagement, supervisor weighs reasoning quality |
+| Cost | ~150K tokens | ~400-600K tokens |
+| When to use | 1-2 domains, straightforward | 3+ domains, high stakes, cross-team tension |
+
+**The tiers are not bureaucracy. They are separation of concerns applied to reasoning.** Each tier does one thing well. The alternative — agents that simultaneously research, analyze, challenge, and synthesize — produces agents that do all four poorly.
+
+---
+
 ## Decision Matrix: Which Mode Do I Use?
 
 | Situation | Use This | Why |
