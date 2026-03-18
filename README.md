@@ -139,6 +139,24 @@ Every multi-agent tool in the Claude Code ecosystem does the same thing: splits 
 
 Quorum is the only plugin that asks: *"How do we know this answer is actually right?"*
 
+### The Socratic Principle: Challenge Without a Box
+
+Quorum walks a razor's edge. On one side: hallucination — agents confidently generating plausible nonsense. On the other: an echo chamber (no pun intended) — agents constrained so tightly by profiles and classification gates that they never think outside the project's existing mental model.
+
+Both failure modes produce the same result: the user gets back what they already believe, packaged in confidence they didn't earn.
+
+This is the direct practice of Socrates. Socrates did not teach by giving answers. He taught by questioning assumptions — including his own. Quorum's architecture embodies this: every swarm includes agents whose job is to challenge, and the system deliberately reaches outside its own comfort zone to find perspectives the user didn't ask for.
+
+Project profiles accelerate the common case. The classification gate right-sizes the swarm. But if those systems become too rigid — if the AI only invokes resources from its own profile, only spawns agents from familiar domains, only asks questions it already knows the answer to — then Quorum becomes a validation machine for the user's existing beliefs, not a reasoning amplifier.
+
+That is why:
+- **The Domain Outsider is never drawn from the project's default domains.** Outsiders are outsiders. If they come from the same world, they see the same things.
+- **Every 5th run deliberately breaks the profile** with a lateral thinker from an unrelated field. Most of the time this produces noise. Sometimes it produces the insight that changes everything.
+- **Exploratory queries invert the profile entirely.** When the user asks "What am I missing?" the profile represents exactly the box they need to escape. The swarm spawns from domains the profile doesn't list.
+- **The classification gate scores the question, not the project.** A business question in a research repo gets business agents, not more researchers.
+
+The goal is not to prevent hallucination by locking the system down. The goal is to prevent hallucination by making it visible — while keeping the creative and lateral thinking channels wide open. Constraint kills creativity. Transparency kills hallucination. Quorum chooses transparency.
+
 **What exists today and why it's not enough:**
 
 - **Claude Swarm, Auto-Claude, Claude Squad** — task dispatchers. Agents never challenge each other. No source verification. No debate.
