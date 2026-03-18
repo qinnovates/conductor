@@ -257,6 +257,20 @@ Works on any research — not just Quorum output. Feed it a paper draft, competi
 
 [Full release notes →](https://github.com/qinnovates/quorum/releases/tag/v3.1.0)
 
+## On Hallucination
+
+No LLM is hallucination-proof. Not GPT-4. Not Claude. Not any model running inside Quorum. Hallucination is not a bug — it is a structural property of how these systems work.
+
+Every transformer output is a probability sample from a learned distribution, not a fact lookup (Vaswani et al. 2017). The model's weights are a lossy compression of training data — and lossy decompression produces artifacts (Deletang et al. 2024). In images, those artifacts are JPEG blocks. In language models, they are hallucinations. The math does not permit zero error.
+
+This is not unique to machines. Artificial neural networks were modeled after biological neurons (McCulloch & Pitts 1943). Biological brains also confabulate — reconstructing memories from statistical patterns rather than retrieving stored records (Bartlett 1932, Schacter 1999, Loftus & Palmer 1974). Both systems fill gaps with plausible guesses. The difference is that we built the LLM, so we can study the mechanism.
+
+Quorum's 5-layer validation pipeline, adversarial agents, and evidence audits reduce hallucination. They make it *visible*. They do not eliminate it. Every Quorum report is a starting point for human judgment, not a replacement for it.
+
+Models will get more accurate. The rates will shrink. They will not reach zero, because probability in an indeterministic world means errors are structural, not temporary. That is what keeps us learning.
+
+**[Full scientific explanation with citations →](docs/SAFETY.md#0-on-hallucination-why-no-llm-is-hallucination-proof)**
+
 ## Documentation
 
 - **[Usage Guide](docs/GUIDE.md)** — When to use flat swarms vs subteams vs dialectic vs validation. Decision matrix, real-world examples, cost guide

@@ -4,6 +4,102 @@
 
 ---
 
+## 0. On Hallucination: Why No LLM Is Hallucination-Proof
+
+Quorum's 5-layer validation pipeline reduces hallucination. It does not eliminate it. No multi-agent architecture can, because hallucination is not a bug in the implementation — it is a structural property of how these systems work at every level, from the mathematics of token generation to the information-theoretic limits of learned representations.
+
+This section explains why, grounded in the science.
+
+### The math: every output is a probability sample, not a fact lookup
+
+A transformer generates text by sampling from a probability distribution over its vocabulary at each step. The final decoder layer produces raw scores (logits), which the softmax function converts to probabilities:
+
+```
+P(token_i) = exp(logit_i / T) / Σ exp(logit_j / T)
+```
+
+where T is the temperature parameter. At T=1, the distribution is as-learned. At T→0 (greedy decoding), the model always picks the highest-probability token. But even at T=0, it is selecting the mode of a *learned approximation* — not retrieving a stored fact. The distribution itself was learned from statistical co-occurrence patterns, not from a fact database. When the model generates "Paris" after "The capital of France is," it is not looking up a record. It is emitting the token that its learned distribution assigns the highest probability. When that distribution is wrong — and it will be, because the distribution is approximate — you get a hallucination through normal operation of the architecture.
+
+This is not a theoretical concern. Holtzman et al. (2020) showed that deterministic decoding (always picking the argmax token) produces degenerate, repetitive text precisely *because* the probability distribution encodes essential information that collapsing to its mode destroys. Nucleus sampling (top-p) was invented to preserve the distributional structure, which means probabilistic sampling is not an optional feature — it is structurally necessary for coherent generation. And probabilistic sampling, by definition, sometimes samples wrong.
+
+*Sources: Vaswani et al. (2017) "Attention Is All You Need," arXiv:1706.03762; Holtzman et al. (2020) "The Curious Case of Neural Text Degeneration," ICLR 2020, arXiv:1904.09751*
+
+### The biology: brains hallucinate too, and for the same reason
+
+Artificial neural networks were explicitly modeled after biological neurons. McCulloch and Pitts (1943) published the first mathematical model of a neuron as a threshold logic unit. Rosenblatt (1958) extended this into the perceptron — a learning model designed to mimic how the biological brain stores and organizes information, with random connections modeled after the retina-to-cortex pathway.
+
+The parallel runs deeper than architecture. Biological brains are also reconstructive systems, not retrieval engines. Bartlett (1932) demonstrated that human memory is "an imaginative reconstruction" built from schematic patterns — participants in his experiments systematically invented details that were never in the original material, confidently and without awareness. Schacter (1999) formalized seven categories of memory failure, three directly analogous to LLM hallucination: *misattribution* (attributing a memory to the wrong source), *suggestibility* (altering memories through framing), and *confabulation* (generating plausible but false narratives to fill gaps). Schacter frames these not as defects but as "byproducts of adaptive memory features."
+
+Loftus and Palmer (1974) proved the point experimentally: participants who heard the word "smashed" versus "contacted" when asked about a car crash not only estimated higher speeds but fabricated memories of broken glass that was never in the film. The biological memory system does not distinguish between "retrieved" and "invented." It produces coherent, confident output regardless of accuracy.
+
+This is structurally identical to LLM hallucination. Both systems reconstruct outputs from stored statistical patterns rather than retrieving discrete, lossless records. The human brain has ~86 billion neurons representing all of human experience. An LLM has billions of parameters representing trillions of tokens of training data. Neither has the capacity for perfect recall, and both fill gaps with plausible confabulation. The difference is that we built the LLM, so we can study the mechanism. The similarity is not metaphorical — it is architectural.
+
+*Sources: McCulloch & Pitts (1943), DOI:10.1007/BF02478259; Rosenblatt (1958), DOI:10.1037/h0042519; Bartlett (1932), Cambridge University Press; Schacter (1999), DOI:10.1037/0003-066x.54.3.182; Loftus & Palmer (1974), DOI:10.1016/S0022-5371(74)80011-3*
+
+### The information theory: LLMs are lossy compressors
+
+Shannon (1948) proved that the entropy of a source is the theoretical minimum for lossless compression. Any compression below that floor must discard information. An LLM's weights are a compressed representation of its training data — a representation that is orders of magnitude smaller than the original corpus. This compression is necessarily lossy.
+
+Deletang et al. (2024) formalized the equivalence between language modeling and compression, showing that transformers function as powerful general-purpose compressors. Chinchilla 70B compresses ImageNet patches to 43.4% and audio to 16.4% of raw size. High compression ratios mean information has been discarded. When the model generates text, it is performing decompression from a lossy representation.
+
+In image compression, lossy decompression produces JPEG artifacts — blocky distortions where fine detail was discarded. In language models, lossy decompression produces hallucinations — plausible-sounding text where precise factual detail was not retained. Chlon, Karim, & Chlon (2025) formalize this directly: hallucinations are "predictable compression failures" that arise "deterministically when information budgets fall below decompression thresholds."
+
+The implication is mathematical, not speculative. A model with N parameters cannot losslessly represent a training corpus with more than N bits of entropy. It will approximate. Some approximations will be wrong. These are not bugs to fix with better training — they are information-theoretic limits.
+
+*Sources: Shannon (1948), Bell System Technical Journal; Deletang et al. (2024) "Language Modeling Is Compression," ICLR 2024, arXiv:2309.10668; Chlon et al. (2025), arXiv:2509.11208*
+
+### The world: irreducible uncertainty exists
+
+Even a perfect model would face questions with no deterministic answer. Knight (1921) distinguished between *risk* (unknown outcomes with known probabilities) and *uncertainty* (outcomes with unknowable probabilities). This "Knightian uncertainty" is irreducible — no amount of training data eliminates it, because it arises from genuine indeterminism in the world, not from insufficient data.
+
+Machine learning formalizes this as the distinction between *epistemic uncertainty* (reducible through more data or better architecture) and *aleatoric uncertainty* (irreducible, inherent in the data-generating process). A model forced to generate output under aleatoric uncertainty will sometimes be wrong. It cannot refuse to produce a token. It can only assign probabilities, and when the world is genuinely uncertain, every assignment carries risk.
+
+Models will get more accurate. Training will improve. Architectures will evolve. But probability in an indeterministic world means errors are a structural feature, not a temporary limitation. That is what keeps the field interesting — and what keeps humans necessary in the loop.
+
+*Sources: Knight (1921), Houghton Mifflin; Hullermeier & Waegeman (2021), DOI:10.1007/s10994-021-05946-3*
+
+### The psychology: why we expect perfection from probabilistic systems
+
+Epley, Waytz, and Cacioppo (2007) identified three factors that drive anthropomorphism: accessible anthropocentric knowledge, effectance motivation (the need to predict and control), and social connection. Modern conversational AI activates all three simultaneously. The system speaks fluently, responds socially, and appears to reason. The result: users attribute human-like reliable memory to a system that is fundamentally a pattern matcher operating on probability distributions.
+
+Bender et al. (2021) coined "stochastic parrot" to describe systems that "stitch together sequences of linguistic forms according to probabilistic information about how they combine, but without any reference to meaning." The framing is most accurate for hallucination specifically: the model generates statistically plausible token sequences regardless of whether those sequences correspond to facts.
+
+This is why Quorum exists. Not because multi-agent debate eliminates hallucination — it cannot — but because structured adversarial challenge catches more errors than a single agent working alone. The Devil's Advocate, the evidence audit, the cross-review: these are human epistemics applied to a machine process. They work the same way peer review works in science — not by making individual humans infallible, but by making the collective process more reliable than any individual.
+
+*Sources: Epley et al. (2007), DOI:10.1037/0033-295X.114.4.864; Bender et al. (2021), DOI:10.1145/3442188.3445922*
+
+### Current measured hallucination rates
+
+No model is hallucination-free. Measured rates vary by task and benchmark:
+
+| Benchmark | Model | Hallucination Rate | Type |
+|-----------|-------|--------------------|------|
+| SimpleQA (Wei et al. 2024) | GPT-4o | ~61.8% incorrect/refused | Factual QA (adversarial) |
+| SimpleQA | Claude 3.5 Sonnet | 36.1% confidently wrong | Factual QA (adversarial) |
+| Vectara Leaderboard (2025) | GPT-4o | 9.6% | Summarization faithfulness |
+| Vectara Leaderboard | Gemini 2.5 Flash Lite | 3.3% | Summarization faithfulness |
+
+These numbers are task-specific, not universal hallucination rates. But they demonstrate that even frontier models operating on well-defined tasks produce errors at measurable, non-zero rates. Models will improve. The rates will shrink. They will not reach zero, because the mathematics does not permit it.
+
+*Sources: Wei et al. (2024), arXiv:2411.04368; Vectara Hallucination Leaderboard, [vectara.com](https://www.vectara.com/blog/introducing-the-next-generation-of-vectaras-hallucination-leaderboard)*
+
+### What Quorum does about it
+
+Quorum cannot solve hallucination. What it can do is make hallucination *visible*:
+
+- **Source grading** catches claims without evidence
+- **Contradiction checking** catches inconsistencies between agents
+- **The hallucination red flag checklist** catches common patterns (fabricated citations, too-clean statistics, universal claims)
+- **Adversarial agents** catch confident-sounding nonsense by arguing against it
+- **Plato's evidence audit** catches unsupported claims by requiring sources
+- **The scope disclaimer** tells you what the panel could not evaluate
+
+The goal is not to produce perfect output. The goal is to produce output where you can see where the uncertainty is — so you, the human, can decide what to trust. That is the same standard we apply to human experts: not infallibility, but transparency about confidence and evidence.
+
+**Every Quorum report is a starting point for human judgment, not a replacement for it.**
+
+---
+
 ## 1. Guardrails (Mandatory)
 
 These five guardrails apply to every Quorum run regardless of flags, mode, or configuration.
