@@ -27,6 +27,14 @@
   - [Groupthink Prevention](#how-quorum-prevents-groupthink)
 - [Challenge Levels (`--rigor`)](#challenge-levels---rigor)
 - [Dialectic Mode (the Socratic Engine)](#dialectic-mode-the-socratic-engine)
+- [Converse Mode (`--converse`)](#converse-mode---converse)
+  - [Research Foundation](#research-foundation)
+  - [Agent Composition](#agent-composition)
+  - [Converse Mode Personas](#converse-mode-personas)
+  - [Converse Mode Phases](#converse-mode-phases)
+  - [Anti-Duplication Rules](#anti-duplication-rules)
+  - [Convergence Detection](#convergence-detection)
+  - [Converse vs Other Modes](#converse-vs-other-modes)
 - [Efficiency Rules](#efficiency-rules)
   - [Search Deduplication](#search-deduplication)
   - [Early Termination](#early-termination)
@@ -73,6 +81,12 @@
   - [HTML Viewer](#html-viewer)
 - [Temporal Simulation Mode](#temporal-simulation-mode---simulate)
 - [Practical Limits](#practical-limits)
+- [Subagent Execution Model](#subagent-execution-model)
+  - [When to Spawn a Subagent](#when-to-spawn-a-subagent)
+  - [When to Run Inline](#when-to-run-inline)
+  - [The Validation Subagent Pattern](#the-validation-subagent-pattern)
+  - [Subagent Prompt Requirements](#subagent-prompt-requirements)
+  - [Integration with Quorum Phases](#integration-with-quorum-phases)
 
 ---
 
@@ -242,25 +256,32 @@ The supervisor does not just compile -- they **author** the synthesis with execu
 
 ---
 
-## Phase 5: Independent Validation Gate
+## Phase 5: Validation Gate
 
-The synthesis gets challenged by a reviewer who had no part in creating it. Two methods, used in order of availability:
+The synthesis gets challenged by a reviewer who was not involved in producing it.
 
-**Method 1: Web Search Fact-Check**
+**Structural limitation (honest disclosure):** Method 2 (agent review) uses a separate agent within the same Claude session and model. This is prompt-level independence, not structural independence. Lorenz et al. (2011) showed that even mild social influence narrows diversity without improving accuracy. Nemeth (2001) showed that role-played dissent is less effective than authentic dissent. The same principle applies here: a reviewer in the same session has implicit context that a truly independent reviewer would not. Method 1 (web search) provides genuinely independent evidence; Method 2 provides useful-but-limited adversarial review. Both are valuable. Neither is a substitute for human review.
+
+**Method 1: Web Search Fact-Check (stronger independence)**
 Use WebSearch to:
 - Fact-check the top 3 consensus claims against authoritative sources
 - Search for counter-evidence to the strongest conclusions
 - Verify any statistics, dates, or proper nouns in the synthesis
 
-**Method 2: Independent Agent Review**
-Spawn a separate Agent with explicit independence framing:
+**Method 2: Subagent Validation (structural independence — preferred over Method 3)**
+Spawn a subagent with a self-contained validation prompt. The subagent runs in fresh context with no inherited conversation history. It receives the synthesis and test criteria but no information about expected outcomes. This addresses the Lorenz et al. limitation directly — the subagent has no implicit context from the main session because it is a separate execution context, not just a separate prompt.
+
+See [Subagent Execution Model](#subagent-execution-model) for the full pattern, prompt requirements, and phase integration.
+
+**Method 3: Same-Session Agent Review (prompt-level independence — weakest)**
+Spawn a separate Agent with adversarial framing:
 ```
-You are an independent reviewer who was NOT part of the swarm that produced this synthesis.
+You are a reviewer who was NOT part of the swarm that produced this synthesis.
 You have no loyalty to these conclusions. Review with fresh eyes.
 [same validation gate prompt]
 ```
 
-The validation gate always runs unless `--no-cross-ai` is set.
+The validation gate always runs unless `--no-cross-ai` is set. Method 1 (web search) is preferred when web access is available. Method 2 (subagent) is preferred over Method 3 (same-session) because it provides structural independence, not just prompt-level independence.
 
 ---
 
@@ -298,13 +319,15 @@ The supervisor writes the final report. This is not aggregation -- it is **autho
 
 | Swarm Size | Required Adversarial Agents |
 |---|---|
-| 5 (`--lite`) | Devil's Advocate only (1 agent) |
-| 6-8 | Devil's Advocate + Naive User (2 agents) |
+| 3 (`--lite --size 3`) | Devil's Advocate only (1 agent) — below Moscovici threshold, use only for quick takes |
+| 5-8 | Devil's Advocate + Naive User (2 agents) — meets Moscovici (1969) credible minority threshold |
 | 9+ (default) | Devil's Advocate + Naive User + Domain Outsider (3 agents) |
 
 - **Devil's Advocate** -- argues against the majority position (always present)
-- **Naive User** -- asks basic questions, tests assumptions (6+ agents)
+- **Naive User** -- asks basic questions, tests assumptions (5+ agents)
 - **Domain Outsider** -- expert from an unrelated field, forces lateral thinking (9+ agents)
+
+**Research basis for the floor of 2:** Asch (1951) showed a single dissenter reduces conformity from 32% to 5%. Moscovici, Lage & Naffrechoux (1969) showed a minority of 2 in a group of 6 shifts the majority when behaviorally consistent — one dissenter is dismissed as eccentric, two establish a credible pattern. The previous floor of 1 adversarial agent at 5-agent swarms was below this threshold. Updated in v5.2.0.
 
 ### Diversity Requirements
 
@@ -401,6 +424,172 @@ Instead of 8 agents giving you 8 opinions, two agents spend 4 rounds drilling in
 Most AI tools give you answers. Dialectic mode gives you **understanding.** The difference is that answers become obsolete when conditions change. Understanding lets you generate new answers on the fly, because you know where the fault lines are.
 
 Socrates never told anyone the answer. He asked questions until the other person found it themselves. Quorum's dialectic mode does the same thing -- except both sides are trying to find it, and you get to watch the discovery happen.
+
+---
+
+## Converse Mode (`--converse`)
+
+When `--converse` is set, the swarm becomes an **iterative adversarial convergence engine** — the full panel stays in the room across multiple rounds, critiquing each other's proposals, building counter-proposals, and converging on solutions that survive sustained attack.
+
+Unlike dialectic mode (2 agents, philosophical depth) or standard mode (parallel analysis, single cross-review), converse mode is **multi-agent iterative problem-solving** — the quorum converses back and forth to identify problems, propose solutions, attack those solutions, and converge on what survives.
+
+### Research Foundation
+
+The agent composition and ratio in converse mode are derived from peer-reviewed research across 8 domains:
+
+| Finding | Source | Implication |
+|---------|--------|-------------|
+| A single ally reduces conformity from 32% to 5% | Asch (1951), conformity experiments | Minimum 1 dissenter breaks groupthink; 2 establishes credible minority pattern |
+| Minority of 2 in group of 6 shifts majority when behaviorally consistent | Moscovici, Lage & Naffrechoux (1969), *Sociometry* 32(4), DOI: 10.2307/2786541 | Two critics > one. Consistency across rounds is the amplifier |
+| Collective Error = Avg Individual Error − Prediction Diversity | Page (2007), *The Difference*, Princeton | Adding a dissenting member improves output even if individually less accurate, as long as errors are uncorrelated |
+| Role-played devil's advocacy causes cognitive bolstering — people become MORE entrenched | Nemeth, Brown & Rogers (2001), *EJSP* 31(6), DOI: 10.1002/ejsp.58 | Critics must hold authentic positions with counter-proposals, not assigned contrarianism |
+| Dialectical Inquiry (counter-plan) produces 34% higher quality than consensus | Schweiger, Sandberg & Ragan (1986), *AMJ* 29(1), DOI: 10.5465/255859 | Critics must propose alternatives, not just attack |
+| AI debate: 2 debaters optimal; COMET drops from 84.4→83.1→82.9 at 3-4 agents | Liang et al. (2023), arXiv:2305.19118, EMNLP 2024 | Performance degrades with too many adversarial agents — context overload |
+| 3 agents, 2 rounds is practical optimum for multi-agent AI debate | Du et al. (2023), arXiv:2305.14325, ICML 2024 | Diminishing returns beyond 3 agents and 2 rounds |
+| Group intelligence correlates with equal conversational turns, not member IQ | Woolley et al. (2010), *Science* 330(6004), DOI: 10.1126/science.1193147 | Structural equality of voice matters more than adding agents |
+| Social influence narrows diversity without improving accuracy | Lorenz et al. (2011), *PNAS* 108(22), DOI: 10.1073/pnas.1008636108 | Independence must be protected by design in early rounds |
+| Delphi method optimal at 10-30 panelists for asynchronous expert consensus | Dalkey & Helmer (1963), *Management Science* 9(3), DOI: 10.1287/mnsc.9.3.458; Linstone & Turoff (2002) | Asynchronous structure allows larger panels without conformity pressure |
+
+### Why Converse Mode Exists
+
+Standard mode runs one round of cross-review then synthesizes. The solution only survives one challenge. Dialectic mode goes deep but with only 2 agents — limited perspectives. Swarm mode scales wide but agents don't converse iteratively.
+
+Converse mode fills the gap: **the full panel iterates**. Each round, agents respond to what was said in the previous round. Solutions must survive multiple rounds of attack from multiple perspectives. What emerges has been battle-tested in a way no other mode achieves.
+
+### Agent Composition
+
+The research converges on a specific formula: **scale critics, hold constructive force constant.**
+
+```
+Critics    = min(floor(N × 0.4), 3)    # Never exceed 3 critics
+Proposer   = 1                          # Puts first solution on table (fixed)
+Synthesizer = 1                         # "What survives?" at convergence checkpoints (fixed)
+Judge      = 1                          # Neutral arbiter, tracks convergence (fixed)
+Historian  = 1 if N ≥ 7                 # Pattern-matches to prior failures (optional)
+```
+
+| Flag | Agents | Critics | Builders | Ratio | Rounds |
+|------|--------|---------|----------|-------|--------|
+| `--converse --lite` | 5 | 2 (Realist + Breaker) | 3 (Proposer + Synthesizer + Judge) | 40/60 | Judge decides (max 6) |
+| `--converse` | 5 | 2 (Realist + Breaker) | 3 (Proposer + Synthesizer + Judge) | 40/60 | Judge decides (max 6) |
+| `--converse --full` | 7 | 3 (Realist + Breaker + Historian) | 4 (Proposer + Synthesizer + Judge + Survivor) | 43/57 | Judge decides (max 6) |
+
+**Why this ratio, not 80/20 or higher:**
+- Liang et al. (2023) show COMET scores DROP at 3+ adversarial agents (context overload)
+- Nemeth (2001) shows the mechanism isn't quantity of criticism — it's **quality** and **authenticity**
+- Schweiger (1986) shows critics who must build counter-plans (DI) outperform critics who only attack (DA) by 34%
+- The builders are fixed at minimum because you need enough constructive force to prevent nihilistic loops (the "Pessimistic Ralph" problem)
+
+### Converse Mode Personas
+
+| Role | Stance | What They Do | When They Speak |
+|------|--------|-------------|-----------------|
+| **Proposer** | Pragmatic | Puts first solution on the table. After Round 1, defends and adapts based on criticism. Not optimistic — just goes first. | Every round |
+| **Realist** | Constructive pessimist | "Here's why this fails in the real world, AND here's what would survive that failure." Must point at what survives, not just what breaks. | Every round |
+| **Breaker** | Adversarial | "Here's how I'd deliberately break this solution." Attacks the proposal from the most damaging angle. Must propose the attack vector, not just state pessimism. | Every round |
+| **Synthesizer** | Neutral constructive | "Given everything that's been said, here's what's still standing." Speaks at convergence checkpoints. Identifies what survived criticism and what collapsed. | Rounds 2, 4, final |
+| **Judge** | Neutral arbiter | Tracks convergence across rounds. Declares when the group has converged, identified irreducible tension, or hit diminishing returns. Calls endpoint. Cannot take a position. | End of each round (meta-commentary only) |
+| **Historian** | Pattern-matcher (--full only) | "This was tried before. Here's what happened." Brings historical precedent, analogous failures, and prior art. | Rounds 1-2 |
+| **Survivor** | Constructive pessimist (--full only) | "Given everything that can go wrong, here's what still stands." Distinct from Synthesizer — Survivor is pessimistic but constructive. | Rounds 3+ |
+
+### Converse Mode Phases
+
+**Round 0 — Propose (Divergent)**
+- Proposer presents initial solution with rationale
+- Historian (if present) provides relevant precedent
+- All other agents observe — no criticism yet
+
+**Round 1 — Contradict**
+- Realist: "Here's why this fails in reality, and here's what would survive"
+- Breaker: "Here's the attack vector that kills this"
+- Proposer must respond substantively — cannot dismiss without counter-evidence
+
+**Round 2 — Defend or Abandon**
+- Proposer either fixes the solution to address Round 1 attacks, or abandons and proposes alternative
+- Realist and Breaker attack the fixes
+- Synthesizer checkpoint: "What's still alive after 2 rounds?"
+
+**Round 3+ — Converge**
+- All agents respond to previous round (no fresh analysis — build on what was said)
+- Judge monitors for convergence signals:
+  - **Convergence:** Critics start agreeing with the revised proposal → solution found
+  - **Irreducible tension:** Same criticism keeps surfacing with no resolution → declare tension, name the tradeoff
+  - **Diminishing returns:** New rounds add nothing → stop
+- Survivor (if present) speaks: "Given everything that can go wrong, here's what still stands"
+
+**Final — Verdict**
+- Judge declares outcome: CONVERGED / TENSION / EXHAUSTED
+- Synthesizer produces final solution (what survived) with attack resistance map
+- All unresolved criticisms preserved in Disagreement Register
+
+### Anti-Duplication Rules
+
+Each round, agents must follow these rules:
+1. **No repetition.** If you said it in a previous round, do not say it again. Build on it, modify it, or reference it — but don't repeat it.
+2. **Engage the previous round.** Every response must reference a specific point from the previous round. No fresh tangents.
+3. **Constructive pessimism only.** "This won't work" is not allowed. "This won't work because X, and here's what would survive X" is required. No free nihilism.
+4. **Counter-proposals required from critics.** Realist and Breaker must propose what WOULD work when they say what won't. This is the Schweiger finding: counter-plans beat pure critique by 34%.
+
+### Convergence Detection
+
+The Judge tracks three signals across rounds:
+
+| Signal | Indicator | Action |
+|--------|-----------|--------|
+| **Agreement growth** | Critics start saying "this holds" or "I tried to break this and couldn't" | Move toward convergence |
+| **Loop detection** | Same criticism appears 2+ rounds with same response | Declare irreducible tension |
+| **Diminishing returns** | New rounds produce only minor refinements, no structural changes | End the conversation |
+
+The Judge declares one of three outcomes:
+- **CONVERGED** — The group found a solution that survived sustained attack. Report includes the attack resistance map.
+- **TENSION** — An irreducible tradeoff was identified. Report names the tension and the evidence on both sides. The user decides.
+- **EXHAUSTED** — No convergence after max rounds. Report shows the best surviving proposal and the unresolved attacks.
+
+### Converse vs Other Modes
+
+| Property | Standard | Dialectic | Converse | Swarm |
+|----------|----------|-----------|----------|-------|
+| Agents | 5-8 | 2 + supervisor | 5-7 | 20-1000+ |
+| Rounds | 1 cross-review | 3-5 deepening | Judge decides (max 6) | 3-20 simulation |
+| Goal | Parallel analysis | Deep understanding | Battle-tested solution | Emergent consensus |
+| Interaction | One cross-review round | Back-and-forth, 2 voices | Full panel converses iteratively | Environment-based |
+| Critics | Devil's Advocate (assigned) | Antithesis (authentic position) | Realist + Breaker (authentic + counter-proposals) | Territory-based |
+| Output | Synthesis with disagreement register | Synthesis/Bedrock/Spark | Attack-resistant solution with resistance map | Polarization map + coalition analysis |
+| When to use | Need breadth of opinion | Need philosophical depth | Need a robust, practical solution | Need exhaustive coverage |
+
+### Converse Mode Defaults
+
+- 5 agents (Proposer + Realist + Breaker + Synthesizer + Judge)
+- Judge decides round count (hard maximum: 6). No fixed range — the adaptive break IS the feature (Liang et al. 2023). Du et al. (2023) showed diminishing returns beyond 2 rounds; the Judge should end early when signal plateaus, not force rounds for the sake of rounds.
+- Validation gate runs after final synthesis (unless `--no-cross-ai`)
+- All anti-boxing rules apply (Domain Outsider injection if consensus is too comfortable)
+- Outcome Ledger captures the surviving solution as a testable claim
+
+### When to Use Converse Mode
+
+- **You need a solution, not just analysis.** Standard mode tells you what experts think. Converse mode tells you what survives attack.
+- **The problem has multiple valid approaches.** Converse iterates until one approach proves most robust.
+- **You want to stress-test before building.** Architecture decisions, strategy choices, product direction — anything where the cost of being wrong is high.
+- **You're tired of confident wrong answers.** Every proposal in converse mode must survive dedicated pessimists who are required to explain what WOULD work, not just what won't.
+
+### Converse Mode Invocation
+
+```bash
+# Standard converse (5 agents, 2-3 rounds)
+/quorum "Best approach to real-time EEG anomaly detection?" --converse
+
+# Full converse with historian (7 agents, 3-4 rounds)
+/quorum "Should we build or buy our auth system?" --converse --full
+
+# Converse + research (research phase first, then converse on findings)
+/quorum "Most robust BCI authentication method?" --converse --mode research
+
+# Converse + seed data
+/quorum "Which vendor should we pick?" --converse --seed vendors.json
+
+# Converse + viz (watch the convergence)
+/quorum "Microservices or monolith for our scale?" --converse --full --viz
+```
 
 ---
 
@@ -1043,7 +1232,7 @@ The Environment Server produces a **Pattern Report** for the supervisor:
 
 #### Phase S4: Supervisor Synthesis
 
-The supervisor reads the Pattern Report (not 500 individual agent reports). This is the key scaling mechanism — the supervisor's input is O(patterns), not O(agents).
+The supervisor reads the Pattern Report (not 500 individual agent reports). This is the intended scaling mechanism — the supervisor's input scales with the number of patterns detected, not the number of agents spawned. **Implementation note:** In the current prompt-orchestrated architecture, the Environment Server and Pattern Detection are simulated by the supervisor agent collecting and summarizing agent outputs. The O(patterns) scaling property is a design goal that depends on effective summarization, not a guaranteed runtime property. True environment-server scaling would require a persistent state store outside the conversation context.
 
 The supervisor:
 1. Reads the Pattern Report + top 10 highest-reaction findings in full
@@ -1673,3 +1862,118 @@ The viz JSON gains:
 - Maximum time steps: 20 (event generation quality degrades beyond this)
 - Event proposal limit: 2 per agent per step
 - Wildcard mandatory every 3 steps
+
+---
+
+## Subagent Execution Model
+
+Quorum can execute work either **inline** (within the current conversation context) or by **spawning subagents** (fresh Claude Code Agent instances with no inherited context). The choice between these two modes is architectural, not cosmetic — each produces fundamentally different epistemic properties.
+
+### When to Spawn a Subagent
+
+| Condition | Why Subagent Is Superior |
+|-----------|------------------------|
+| **Validation/testing that needs unbiased fresh context** | The subagent has no knowledge of expected outcomes, eliminating confirmation bias. It cannot anchor on prior discussion. |
+| **Research that could pollute main context** | Large search results, API responses, and evidence dumps stay isolated. The main session receives only the structured findings. |
+| **Adversarial testing where the tester should not know the expected answer** | A subagent running a test protocol cannot unconsciously steer results toward what the main session "wants" to find. |
+| **Parallel independent work** | Subagents can run in background (`run_in_background: true`) while the main session continues other work. |
+| **Code execution that could modify state** | Isolating state-changing operations in a subagent (or worktree) prevents accidental side effects in the main session. |
+
+### When to Run Inline
+
+| Condition | Why Inline Is Superior |
+|-----------|----------------------|
+| **Quick opinions/decisions (< 5 agents, no code execution)** | Spawning a subagent for a 2-minute debate adds overhead without benefit. |
+| **Analysis of artifacts already in context** | The main session already has the file loaded. Sending it to a subagent means re-reading it. |
+| **Questions that need conversation history** | If the answer depends on decisions made earlier in the session, inline agents have that context naturally. |
+| **Iterative refinement** | When the user is actively steering the analysis ("now focus on X"), inline keeps the feedback loop tight. |
+
+### The Validation Subagent Pattern
+
+This is Quorum's most important subagent pattern. It structurally eliminates confirmation bias from validation by ensuring the tester has zero knowledge of expected outcomes.
+
+**How it works:**
+
+```
+Phase 1: Main Quorum session designs the test protocol
+    - Identifies what needs validation
+    - Defines exact test steps with pass/fail criteria
+    - Writes a self-contained prompt with full context about
+      what is being tested, but NO information about expected outcomes
+
+Phase 2: Subagent executes the protocol in fresh context
+    - Receives only the self-contained prompt
+    - Has no access to the main session's conversation history
+    - Cannot see what the main session discussed, predicted, or hoped for
+    - Runs all test steps independently
+    - Records raw results with evidence
+
+Phase 3: Subagent reports results
+    - Returns structured PASS/FAIL with evidence for each test
+    - Includes any unexpected findings or anomalies
+    - Reports what it could not test and why
+
+Phase 4: Main session interprets and acts on results
+    - Compares subagent findings against expectations
+    - Discrepancies between expected and actual results are the signal
+    - Acts on findings (fix bugs, update docs, revise conclusions)
+```
+
+**Why this works:**
+
+- **Eliminates confirmation bias.** The tester does not know what the "right" answer is, so it tests honestly. A reviewer who knows the expected outcome unconsciously steers toward confirming it (Nickerson 1998).
+- **Fresh context prevents anchoring.** The main session may have spent 30 minutes discussing why something "should" work. The subagent has none of that anchoring — it evaluates what actually exists.
+- **Self-contained prompts ensure reproducibility.** The same prompt can be re-run later for regression testing. If the test passes today and fails next week, the prompt is identical — the difference is the code.
+- **Main context stays clean.** Test output (stack traces, log dumps, assertion results) does not pollute the main session's context window. The main session receives only the verdict.
+
+**Example — production validation:**
+
+```
+# Main session builds a self-contained validation prompt:
+prompt = """
+You are testing a Python package called 'engram'.
+Run: pip install bci-engram
+Then execute these 11 test phases:
+1. Import test: `import engram` should succeed
+2. Version check: `engram.__version__` should return a string
+3. Core API test: [specific steps with pass/fail criteria]
+...
+Report PASS or FAIL for each phase with evidence.
+"""
+
+# Spawn subagent with fresh context
+Agent(prompt, run_in_background=true)
+
+# Subagent has NO knowledge of:
+# - What version was just released
+# - What bugs were just fixed
+# - What the main session expects to pass or fail
+# Result: subagent found a real bug the main session missed
+```
+
+### Subagent Prompt Requirements
+
+Every subagent prompt must be **self-contained**. The subagent has no conversation history, no project context, no memory of what came before. The prompt must include:
+
+1. **Full context** about what is being tested, reviewed, or researched
+2. **Exact steps** with unambiguous pass/fail criteria
+3. **No expected outcomes** — the subagent should not know what "success" looks like beyond the test criteria
+4. **Output format** — how to structure the results so the main session can parse them
+5. **Scope boundaries** — what the subagent should and should not do (e.g., "read-only, do not modify files")
+
+### Integration with Quorum Phases
+
+The subagent model maps cleanly onto Quorum's existing phase architecture:
+
+| Quorum Phase | Inline or Subagent | Rationale |
+|-------------|-------------------|-----------|
+| Phase 0: Setup | Inline | Supervisor needs conversation context to configure the swarm |
+| Phase 1: Independent Work | Either | Agents already run independently; subagent adds context isolation |
+| Phase 2: Triage | Inline | Supervisor reads all reports — needs full context |
+| Phase 3: Cross-Review | Inline | Debate requires shared context between agents |
+| Phase 4: Synthesis | Inline | Supervisor authors the verdict from full session context |
+| Phase 5: Validation Gate | **Subagent (preferred)** | Validation benefits most from fresh context and zero anchoring |
+| Phase 6: Response to Feedback | Inline | Agents need the feedback context |
+| Phase 7: Final Synthesis | Inline | Supervisor needs full session context for final judgment |
+
+Phase 5 is the natural home for the validation subagent pattern. The existing Phase 5 architecture already acknowledges the limitation of same-session validation (Lorenz et al. 2011). Subagent execution addresses this directly — the subagent is structurally independent, not just prompt-independent.

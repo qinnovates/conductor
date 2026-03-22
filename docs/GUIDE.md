@@ -145,7 +145,10 @@ Tier 1 (Supervisor): [Reads all positions, Socrates' questions, Plato's audit]
 | 3+ domains intersecting | `/quorum "question" --org` | Auto-detects teams, hierarchical |
 | Specific departments needed | `/quorum "question" --teams "eng,legal,clinical"` | You pick the teams |
 | Deep philosophical/strategic question | `/quorum "question" --rigor dialectic` | 2 agents, multiple rounds, Socratic |
+| Need a battle-tested solution | `/quorum "question" --converse` | 5 agents iterate, critics must counter-propose |
+| Stress-test before building | `/quorum "question" --converse --full` | 7 agents, Judge decides rounds, historian + survivor |
 | Fact-check prior research | `/quorum "validate" --artifact report.md --rigor high` | Validation workflow |
+| Bias-free production testing | Subagent with self-contained prompt | Subagent validation (fresh context) |
 
 ---
 
@@ -211,11 +214,11 @@ A flat swarm is a single panel of experts debating in parallel. No hierarchy, no
 
 ### Mandatory adversarial agents (scales with size)
 
-| Swarm Size | Adversarial Agents |
-|---|---|
-| 3-5 (`--lite`) | Devil's Advocate |
-| 6-8 | Devil's Advocate + Naive User |
-| 9+ | Devil's Advocate + Naive User + Domain Outsider |
+| Swarm Size | Adversarial Agents | Research Basis |
+|---|---|---|
+| 3 (minimum) | Devil's Advocate (1) | Asch (1951): single dissenter reduces conformity 32%→5% |
+| 5-8 | Devil's Advocate + Naive User (2) | Moscovici (1969): minority of 2 establishes credible pattern |
+| 9+ | Devil's Advocate + Naive User + Domain Outsider (3) | Schweiger (1986): multiple challenge perspectives improve quality |
 
 ---
 
@@ -386,9 +389,81 @@ Instead of 8 agents giving 8 opinions, two agents spend 4 rounds drilling into: 
 
 ---
 
+## Converse Mode (`--converse`)
+
+Not parallel analysis. Not Socratic dialogue. An **iterative adversarial convergence** — the full panel stays in the room across multiple rounds, attacking proposals, building counter-proposals, and converging on what survives.
+
+### When to use converse
+
+- You need a **solution**, not just analysis — something that's been stress-tested before you build it
+- The problem has **multiple valid approaches** and you need to find the most robust one
+- You want to answer: "What would actually survive in production?"
+- Architecture decisions, build vs. buy, strategy choices, vendor selection
+- Any question where confident wrong answers are expensive
+
+### How it differs from other modes
+
+| | Standard | Dialectic | **Converse** |
+|--|----------|-----------|-------------|
+| Agents | 5-8 parallel | 2 + supervisor | 5-7 iterative |
+| Rounds | 1 cross-review | 3-5 deepening | Judge decides (max 6) |
+| Critics | 1 Devil's Advocate | 1 Antithesis | 2-3 authentic critics with counter-proposals |
+| Goal | Breadth of opinion | Deep understanding | Battle-tested solution |
+| Output | Synthesis | Synthesis/Bedrock/Spark | Attack-resistant solution with resistance map |
+
+### The research behind the ratio
+
+The 40% adversarial / 60% constructive ratio isn't arbitrary. It's derived from convergent findings across jury deliberation (Nemeth 1977), adversarial collaboration (Kahneman 2003), multi-agent AI debate (Du et al. 2023, Liang et al. 2023), and devil's advocate research (Schweiger et al. 1986). The critical insight from Nemeth (2001): **assigned contrarianism makes people MORE entrenched, not less.** Converse mode critics hold authentic positions and must propose alternatives — the Schweiger finding that counter-plans beat pure critique by 34%.
+
+### The five roles
+
+| Role | What they do |
+|------|-------------|
+| **Proposer** | Goes first. After Round 0, defends and adapts. Not optimistic — just starts the conversation. |
+| **Realist** | "This fails because X, and here's what survives X." Constructive pessimism — every criticism includes a survival path. |
+| **Breaker** | Red-teams the proposal. Self-rates attacks (CRITICAL/SIGNIFICANT/MINOR). When they say "I can't break this" — that's the strongest signal. |
+| **Synthesizer** | "What's still standing?" Speaks at checkpoints. Maps what survived, what collapsed, what was modified. |
+| **Judge** | Neutral arbiter. Tracks convergence. Ends the conversation when the group converges, hits irreducible tension, or exhausts returns. |
+
+`--full` adds a **Historian** (precedent and pattern-matching) and **Survivor** (pessimistic but constructive — distinct from Synthesizer).
+
+### How it works
+
+```
+Round 0: Proposer presents solution. Historian provides precedent.
+Round 1: Realist + Breaker attack. Proposer must respond substantively.
+Round 2: Proposer revises or abandons. Critics attack the fixes.
+         Synthesizer checkpoint: "What's still alive?"
+Round N: Judge decides when to end (max 6). No fixed range — the
+         adaptive break IS the feature (Liang et al. 2023).
+         Declares: CONVERGED / TENSION / EXHAUSTED
+```
+
+### Anti-duplication rule
+
+No repetition. Every round must build on the last. Critics must counter-propose, not just attack. "This won't work" is not allowed — "This won't work because X, and here's what would survive X" is required. No free nihilism.
+
+### Examples
+
+```bash
+# Standard converse — 5 agents, 2-3 rounds
+/quorum "Best approach to real-time EEG anomaly detection?" --converse
+
+# Full converse — 7 agents with historian, 3-4 rounds
+/quorum "Should we build or buy our auth system?" --converse --full
+
+# Converse + research — research first, then converse on findings
+/quorum "Most robust BCI authentication method?" --converse --mode research
+
+# Converse + viz — watch the convergence animation
+/quorum "Microservices or monolith for our scale?" --converse --full --viz
+```
+
+---
+
 ## Research + Validation Workflow
 
-Use one swarm to research, then a separate Quorum panel to fact-check what it found.
+Use one swarm to research, then a separate Quorum panel to fact-check what it found. For the strongest independence guarantees, use the [Subagent Validation](#subagent-validation-fresh-context-testing) pattern — it provides structural isolation, not just prompt-level independence.
 
 ### When to use validation
 
@@ -437,6 +512,94 @@ Use one swarm to research, then a separate Quorum panel to fact-check what it fo
 | **BLOCKED** | Consensus: unsupported, contradicted, or likely hallucinated |
 
 Every validation report includes **Panel Provenance** (who validated, their stances) and a **Coverage Notice** (what the panel could not evaluate).
+
+---
+
+## Subagent Validation (Fresh-Context Testing)
+
+When Quorum needs to validate something without bias, it can spawn a Claude Code subagent — a fresh instance with zero knowledge of the main session's conversation, expectations, or conclusions.
+
+### Why This Matters
+
+The main session carries context baggage. After 30 minutes of discussing why a solution "should work," every agent in that session is anchored. A subagent has none of that anchoring. It tests what actually exists, not what the conversation expects to exist.
+
+This is the difference between:
+- **Same-session validation:** "I was part of the conversation. I know what the expected answer is. I will unconsciously steer toward confirming it."
+- **Subagent validation:** "I have no idea what the expected answer is. I will test and report what I find."
+
+### The Pattern
+
+```
+1. Main session designs the test protocol
+   - What to test (full context)
+   - Exact steps with pass/fail criteria
+   - NO expected outcomes (the subagent must not know what "success" looks like)
+
+2. Subagent executes in fresh context
+   - Receives only the self-contained prompt
+   - Cannot see prior discussion, predictions, or hopes
+   - Runs all steps independently
+   - Records raw results
+
+3. Subagent reports back
+   - Structured PASS/FAIL with evidence
+   - Unexpected findings and anomalies
+   - What it could not test and why
+
+4. Main session interprets
+   - Compares actual vs expected
+   - Discrepancies = the signal
+   - Acts on findings
+```
+
+### When to Use Subagent Validation
+
+| Scenario | Use Subagent? | Why |
+|----------|--------------|-----|
+| Validating a build/deploy/release | Yes | Fresh context catches what anchored context misses |
+| Fact-checking research output | Yes | Reviewer should not know which facts the researcher "wants" to be true |
+| Adversarial testing / red team | Yes | Attacker should not know the defenses |
+| Testing code changes | Yes | Tester should not know which tests "should" pass |
+| Quick opinion on a design choice | No | Overhead not worth it for lightweight decisions |
+| Reviewing an artifact already in context | No | Main session already has the file loaded |
+| Iterative refinement with user | No | Needs conversation history |
+
+### Example: Production Package Validation
+
+```bash
+# Stage 1 — Build and publish the package (main session)
+# ... build, test, publish ...
+
+# Stage 2 — Validate with fresh context (subagent)
+# Main session generates a self-contained prompt:
+#   "Install bci-engram from PyPI. Run these 11 test phases.
+#    Report PASS/FAIL for each with evidence."
+# The subagent does NOT know:
+#   - What version was just published
+#   - What bugs were just fixed
+#   - What the main session expects to pass
+
+# Stage 3 — Interpret results (main session)
+# Subagent found a real import bug that the main session
+# missed because it was anchored on "we just fixed everything"
+```
+
+### Combining with Two-Stage Validation
+
+Subagent validation composes with the existing two-stage research + validation workflow:
+
+```bash
+# Stage 1 — Research (inline, main session)
+/quorum "Landscape of EEG authentication methods" --mode research --full
+
+# Stage 2 — Validate via subagent (fresh context)
+# Quorum spawns a subagent with the research output
+# Subagent fact-checks citations, verifies claims, flags hallucinations
+# Subagent has no knowledge of which findings the research phase
+# was most confident about — it checks everything equally
+```
+
+This is stronger than same-session validation (Phase 5 Method 2) because the subagent is structurally independent, not just prompt-independent.
 
 ---
 
@@ -511,6 +674,8 @@ Modes compose. Stack them for maximum rigor.
 | Default | 5 | ~150K | 2-4 min | Standard question |
 | `--full` | 8 | ~300-500K | 3-8 min | Important decision |
 | `--rigor dialectic` | 2 + supervisor | ~200K | 3-6 min | Deep understanding |
+| `--converse` | 5 | ~200-300K | 3-6 min | Battle-tested solution (Judge decides rounds) |
+| `--converse --full` | 7 | ~300-500K | 5-8 min | Battle-tested + precedent (Judge decides rounds) |
 | `--org` (3 teams) | 17 | ~400-600K | 5-10 min | Cross-domain complexity |
 | `--org` (4 teams) | 22 | ~500-800K | 8-12 min | Large-scale validation |
 | Two-stage validation | 8 + 5 | ~480K total | 8-10 min | Research + fact-check |
