@@ -88,8 +88,8 @@ Every panel of 5+ agents includes at least 2 adversarial agents. Not 1.
 /quorum "Build a REST API for user auth with JWT" --max
 # → Supervisor detects "Build" → generates PRD with TDD + acceptance criteria
 # → Converse stress-tests the PRD (Architect, Breaker, TDD Enforcer, Pragmatist, Judge)
-# → Outputs: _swarm/prd-user-auth.md with Ralph loop command
-# → Run: ./quorum/scripts/ralph.sh --prd _swarm/prd-user-auth.md
+# → Outputs: _swarm/prd-user-auth.md (battle-tested PRD)
+# → Run the Ralph loop: ./quorum/scripts/ralph.sh --prd _swarm/prd-user-auth.md
 
 # Review a document
 /quorum "Review this proposal for risks" --artifact proposal.md
@@ -132,14 +132,14 @@ When you say "build", "implement", "create", "scaffold", "write a", "set up", or
    - TDD Enforcer: "Is every task actually testable? Assertions specific enough?"
    - Pragmatist: "Is this over-engineered? Can tasks be eliminated?"
    - Judge: Computes convergence score. Declares READY or sends back for revision.
-4. **Output:** `_swarm/prd-user-auth.md` — battle-tested PRD with Ralph loop command
+4. **Output:** `_swarm/prd-{name}.md` — battle-tested PRD with Ralph loop command
 
 ```bash
-# Run the PRD autonomously
+# Run the PRD via Ralph loop
 ./quorum/scripts/ralph.sh --prd _swarm/prd-user-auth.md
 ```
 
-**The Ralph loop** executes each task with fresh context:
+**The Ralph loop** executes each task with fresh context (sandboxed, standard permissions):
 - Reads PRD + progress.md + AGENTS.md
 - Picks highest-priority incomplete task
 - TDD: test → fail → implement → pass → commit
