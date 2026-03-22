@@ -2,6 +2,32 @@
 
 All notable changes to Quorum are documented here.
 
+## [v5.0.0](https://github.com/qinnovates/quorum/releases/tag/v5.0.0) — 2026-03-22
+
+### Added — Swarm Mode
+- **Swarm Mode** (`--swarm`) — scales Quorum from 3-17 agents to 20-1000+ agents using environment-based coordination
+- **Partition Engine (Tier S1)** — generates MECE (mutually exclusive, collectively exhaustive) taxonomy from the problem space. Each agent gets a unique territory. Hard no-overlap guarantee via territory boundaries and handoff routing.
+- **Environment Server (Tier S2)** — shared state store replacing per-agent context passing at scale. Agents POST findings, REACT to others, HANDOFF cross-territory discoveries, SHIFT positions. Pattern detection identifies opinion clusters, polarizations, cascades, and coalitions.
+- **Activation Scheduler (Tier S3)** — probabilistic agent activation so not all agents run every round. Four strategies: round-robin (default), reactive, priority-weighted, probabilistic.
+- **Prediction mode** (`--predict`) — probabilistic activation, sentiment trajectory tracking, coalition detection. Designed for forecasting and Delphi-method consensus.
+- **8-phase swarm workflow** — Taxonomy → Spawn → Simulation Rounds → Pattern Extraction → Synthesis → Structural Challenge → Validation → Final Report
+- **Supervisor interviews** — supervisor directly interviews 3-5 selected agents (isolated findings, minority positions) for depth at scale
+- **Swarm output format** — emergent consensus, polarizations, cascades, coalition map, sentiment trajectory
+- New flags: `--swarm`, `--predict`, `--branches`, `--schedule`, `--taxonomy show`, `--interviews N`
+
+### Architecture
+- 5-Tier → 6-Tier architecture (3 new infrastructure tiers for swarm mode)
+- Swarm-scale scoring added to Task Classification Gate
+- Detailed comparison table: Quorum Swarm Mode vs MiroFish/OASIS
+
+### Changed
+- Version bump 4.1.0 → 5.0.0 (breaking: new architecture tier, new output format for swarm mode)
+
+### Inspiration
+Scaling approach inspired by MiroFish/OASIS swarm intelligence prediction engine (environment-as-coordinator, probabilistic activation, emergent pattern detection). Adapted with Quorum's epistemic guarantees: MECE territory enforcement, evidence tiers, structural challenge, independent validation, anti-boxing rules.
+
+---
+
 ## [v4.1.0](https://github.com/qinnovates/quorum/releases/tag/v4.1.0) — 2026-03-17
 
 ### Security

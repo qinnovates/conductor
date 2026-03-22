@@ -1,10 +1,10 @@
 # Quorum
 
-**Orchestrate a swarm of AI experts on any question. One command, multiple minds, stress-tested answers.**
+**Orchestrate a swarm of AI experts on any question. From 3 agents to 1,000. One command, multiple minds, stress-tested answers.**
 
 Type one command. Quorum spins up a team of specialists — researchers, analysts, skeptics, domain experts — makes them work the problem from every angle, debate each other, validate their claims, and deliver a synthesized verdict you can actually act on.
 
-Like having a room full of smart people argue about your question before anyone gives you the answer.
+Like having a room full of smart people argue about your question before anyone gives you the answer. Or, in swarm mode, an entire conference hall.
 
 ```
 /quorum "your question here"
@@ -47,6 +47,12 @@ claude install qinnovates/quorum
 
 # Fact-check a prior research swarm
 /quorum "Validate this research" --artifact _swarm/report.md --rigor high
+
+# Swarm mode — hundreds of agents, emergent intelligence
+/quorum "Impact of EU AI Act on BCI startups" --swarm
+
+# Prediction mode — Delphi-method forecasting
+/quorum "Will neural data be classified as biometric by 2028?" --swarm --predict
 
 # See the plan before running
 /quorum "your question" --dry-run
@@ -106,17 +112,24 @@ Instead of 5 agents giving parallel opinions, two agents enter a philosophical d
 
 | Flag | Default | Description |
 |---|---|---|
-| `--size N` | 5 | Number of expert agents (3-20) |
-| `--rounds N` | 1 | Debate rounds (1-3) |
+| `--size N` | auto | Number of expert agents (3-1000+) |
+| `--rounds N` | 1 | Debate rounds (1-3 standard, 3-20 swarm) |
 | `--full` | — | Full mode: 8 agents, 2 rounds, validation |
 | `--lite` | — | Minimal: 3 agents, 1 round |
 | `--rigor LEVEL` | medium | low / medium / high / dialectic |
-| `--mode MODE` | auto | review / research / hybrid |
+| `--mode MODE` | auto | review / research / hybrid / explore |
 | `--artifact PATH` | — | File to review |
-| `--format FORMAT` | full | full / brief / actions-only |
+| `--format FORMAT` | auto | audit / research / dialectic / decision / org / explore |
 | `--dry-run` | — | Show plan without running |
 | `--output PATH` | auto | Custom output path |
 | `--resume ID` | — | Resume a previous session |
+| **Swarm Mode** | | |
+| `--swarm` | — | Enable swarm mode (20-1000+ agents) |
+| `--predict` | — | Prediction mode with sentiment tracking and coalition detection |
+| `--branches "a,b,c"` | auto | Manual top-level taxonomy branches |
+| `--schedule STRATEGY` | round-robin | round-robin / reactive / priority / probabilistic |
+| `--taxonomy show` | — | Show generated taxonomy without running |
+| `--interviews N` | 5 | Agents the supervisor interviews directly |
 
 ## How It Works
 
@@ -124,7 +137,7 @@ Quorum runs a multi-phase pipeline. You don't need to understand this to use it 
 
 **[Full architecture documentation →](docs/ARCHITECTURE.md)**
 
-**Phase summary:**
+**Standard mode (3-17 agents):**
 1. **Setup** — Supervisor analyzes your question, picks the right experts and assigns each a unique angle
 2. **Independent work** — All agents work in parallel, no one sees anyone else's output
 3. **Triage** — Supervisor reads all reports, drops low-value agents, identifies key disagreements
@@ -133,27 +146,43 @@ Quorum runs a multi-phase pipeline. You don't need to understand this to use it 
 6. **Validation** — Independent reviewer challenges the synthesis
 7. **Final report** — What survived, what's disputed, what to do next
 
-## Flat vs Hierarchy — When to Use What
+**Swarm mode (20-1000+ agents):**
+1. **Taxonomy** — Partition Engine decomposes the problem into non-overlapping territories
+2. **Spawn** — One agent per territory, persona derived from its domain
+3. **Simulation** — Agents POST findings, REACT to others, HANDOFF cross-territory discoveries, SHIFT positions across multiple rounds
+4. **Pattern extraction** — Environment Server identifies opinion clusters, polarizations, cascades, coalitions
+5. **Synthesis** — Supervisor reads patterns (not individual reports), interviews key agents
+6. **Structural challenge** — Socrates questions clusters, Plato audits evidence
+7. **Validation** — Independent reviewer challenges the synthesis
+8. **Final report** — Emergent consensus, polarizations, sentiment trajectory, what to do next
+
+## Scaling: Flat → Hierarchy → Swarm
 
 Most multi-agent tools are flat: split a task, hand each piece to an agent, merge. That works for 5 agents on a focused question. It falls apart at 12+ agents on a cross-domain question — a security researcher and a clinician aren't arguing about the same thing, they're arguing about different things using the same words. A flat supervisor managing 15 individual perspectives loses signal fast.
 
-Quorum scales in three tiers:
+Quorum scales in four tiers:
 
 | Mode | Agents | Structure | When to Use |
 |------|--------|-----------|-------------|
 | **Flat** (`--lite`, default) | 3-8 | Single panel, everyone debates everyone | Focused questions in 1-2 domains |
 | **Subteam** (`--teams`) | 9-17 | Named teams deliberate internally, leads cross-challenge | Questions crossing 3+ domains with different incentives |
 | **Org** (`--org`) | 17+ | Full hierarchy: teams + Socrates + Plato | High-stakes decisions, regulatory review, research synthesis |
+| **Swarm** (`--swarm`) | 20-1000+ | Taxonomy-partitioned agents, environment-based coordination | Predictions, landscape surveys, exhaustive red teaming, Delphi consensus |
 
 **Why hierarchy beats flat at scale:**
 
 - **15 flat agents** produce 15 reports. The supervisor reads all 15, loses nuance, defaults to vote-counting. Echo chambers form because everyone sees similar context.
 - **3 teams of 5** produce 3 team positions. Each team has internal debate first (local consensus), then team leads present to the supervisor. Cross-team challenges happen at the leadership level where the real tensions are. The supervisor arbitrates between 3 institutional positions — not 15 individual hot takes.
 
-**Two structural roles appear only in subteam/org mode:**
+**Why swarm beats org at massive scale:**
 
-- **Socrates** asks each team lead ONE question — the one they'd least want to answer. Cannot state an opinion. Forces teams to defend their weakest point. Prevents echo chambers.
-- **Plato** audits every claim across all teams: is it sourced or asserted? Produces an evidence audit table. Any unsupported claim is flagged in the final report. Prevents hallucination.
+- **17 org agents** can be supervised individually. The supervisor reads every report. This breaks at 50+.
+- **200 swarm agents** write to a shared environment. The supervisor doesn't read 200 reports — it reads the **patterns** that emerge: which opinions clustered independently across unrelated territories, where polarization formed, which findings cascaded through the swarm. The input is O(patterns), not O(agents).
+
+**Two structural roles appear in subteam/org/swarm mode:**
+
+- **Socrates** asks each team lead (or opinion cluster in swarm mode) ONE question — the one they'd least want to answer. Cannot state an opinion. Forces teams to defend their weakest point. Prevents echo chambers.
+- **Plato** audits every claim across all teams (or top clusters): is it sourced or asserted? Produces an evidence audit table. Any unsupported claim is flagged in the final report. Prevents hallucination.
 
 Together, Socrates prevents echo chambers (forces teams to defend their weakest points) and Plato prevents hallucination (forces teams to source their strongest claims). You can't agree quickly if you haven't survived questioning AND evidence audit.
 
@@ -166,9 +195,15 @@ Together, Socrates prevents echo chambers (forces teams to defend their weakest 
 
 # High-stakes research synthesis — full org
 /quorum "Validate the receptor expansion research" --org --rigor high
+
+# Landscape survey — swarm covers exhaustively
+/quorum "EEG authentication methods: full landscape" --swarm --size 100
+
+# Prediction — emergent collective intelligence
+/quorum "Will the EU classify neural data as biometric by 2028?" --swarm --predict
 ```
 
-**[Full guide: when to use flat vs subteams vs dialectic →](docs/GUIDE.md)**
+**[Full guide: when to use flat vs subteams vs dialectic vs swarm →](docs/GUIDE.md)**
 
 ## What Makes Quorum Different
 
@@ -211,8 +246,9 @@ Constraint kills creativity. Transparency kills hallucination. Quorum chooses tr
 - Research agents search **different sources with different terms** — not the same Google result five times
 - The supervisor **judges reasoning quality**, not vote counts — a well-argued minority beats a hand-waving majority
 - **Dialectic mode** — two agents drill through contradiction across multiple rounds until they hit bedrock. Doesn't exist anywhere else
+- **Swarm mode** — scales to 1000+ agents with taxonomy-partitioned territories, environment-based coordination, and emergent pattern detection. No other AI plugin does collective intelligence at this scale with built-in epistemic guarantees
 
-The difference: other tools give you more answers. Quorum gives you *better* answers.
+The difference: other tools give you more answers. Quorum gives you *better* answers — and now, at any scale.
 
 ## Examples
 
@@ -283,9 +319,24 @@ It's not a developer tool. It's a thinking tool. Any question where you'd want a
 /quorum "Best Python web framework for a small API?" --lite
 ```
 
+**Swarm: predict a market shift:**
+```
+/quorum "Will BCI startups consolidate or fragment by 2028?" --swarm --predict --size 200
+```
+
+**Swarm: exhaustive red team:**
+```
+/quorum "Red team our authentication system — every vector" --swarm --branches "network,application,social,physical,supply-chain"
+```
+
+**Swarm: landscape survey:**
+```
+/quorum "Complete landscape: adversarial attacks on EEG systems" --swarm --schedule reactive --rounds 10
+```
+
 ## Output Format
 
-Every report includes:
+Every standard report includes:
 - **Executive Summary** — 3-5 sentences, degree of consensus, key finding
 - **Supervisor's Assessment** — The quorum's own judgment (most valuable section)
 - **Confidence & Verification** — What's backed by evidence vs. supervisor judgment
@@ -293,50 +344,58 @@ Every report includes:
 - **Priority Actions** — Ranked by impact, not by how many agents mentioned them
 - **Blind Spots** — What the team collectively could not evaluate
 
-## What's New in v4.1.0
+Swarm reports add:
+- **Emergent Consensus** — Findings that agents in unrelated territories reached independently (strongest signal)
+- **Polarizations** — Genuine disagreements with evidence on both sides
+- **Cascades** — Findings that changed the swarm's trajectory
+- **Coalition Map** — Which territory groups aligned on which recommendations
+- **Sentiment Trajectory** — How the swarm's collective position evolved across rounds
 
-**Divergence Engine + Security Hardening + SKILL.md split (1490 → 250 lines).**
+## What's New in v5.0.0
 
-- **Provocateur archetype** — challenges whether the question itself is right
-- **EXPLORE mode** — for meta-questions ("What am I missing?"), each agent reframes instead of analyzes
-- **Structural protections** — adversarial agents immune to pruning, Socratic follow-ups (2-3 per team), refutation resistance replaces confidence scores
-- **Security:** injection defense on all templates, profile poisoning prevention, scoped file access
-- **SKILL.md:** split from 1490 to 250 lines. Architecture details moved to docs/. Progressive loading.
+**Swarm Mode.** Quorum now scales from 3 agents to 1,000+.
 
-[Full changelog →](docs/CHANGELOG.md)
+Standard Quorum tops out at ~17 agents — the supervisor reads every report, designs every debate pair, writes every synthesis. That's the right approach for focused questions. But for predictions, landscape surveys, exhaustive red teaming, and Delphi-method consensus, you need collective intelligence at population scale.
 
-## What's New in v4.0.0
+Swarm mode replaces per-agent orchestration with **environment-based coordination**:
 
-**Adaptive Intelligence.** Quorum now reads your project before configuring. No more flat-5 defaults.
+- **Partition Engine** — decomposes the problem into a MECE (mutually exclusive, collectively exhaustive) taxonomy. Each agent gets a unique territory. No overlap, guaranteed.
+- **Environment Server** — shared state store where agents POST findings, REACT to others, HANDOFF cross-territory discoveries, and SHIFT positions. The supervisor reads emergent patterns, not individual reports.
+- **Activation Scheduler** — not all agents run every round. Four scheduling strategies (round-robin, reactive, priority, probabilistic) keep compute linear as agent count grows.
+- **Prediction mode** (`--predict`) — probabilistic activation, sentiment trajectory tracking, coalition detection. Designed for forecasting questions.
 
-- **Project Profiles** — auto-generated on first run, persists context across runs. Quorum stops re-discovering your project every time.
-- **Task Classification Gate** — scores every query on 4 dimensions (domain count, certainty demand, scope, artifact) and auto-selects mode, agent count, structure, and rigor.
-- **Config Transparency Block** — shows what Quorum read, what it decided, and why. Approve, edit, or cancel before tokens are spent.
-- **Adaptive Output Templates** — 5 output formats matched to task type: AUDIT (checklist), RESEARCH (evidence base), DIALECTIC (insight chain), DECISION (tradeoff table), ORG (executive briefing).
+The supervisor still writes the final verdict. Socrates still questions. Plato still audits evidence. The 5-layer validation pipeline still runs. Anti-boxing rules still apply. Everything that makes Quorum an epistemic quality gate is preserved — it just scales.
 
-[Full changelog →](docs/CHANGELOG.md)
-
-## What's New in v3.2.0
-
-**Security hardening release.** Removed shell access from agent manifest, added prompt injection defense to all agent templates, defined credential detection patterns, fixed privacy disclosures. [Full changelog →](docs/CHANGELOG.md)
-
-## What's New in v3.1.0
-
-**Quorum as an epistemic quality gate.** Use one swarm to research, then a separate Quorum panel to fact-check what it found.
+Inspired by [MiroFish/OASIS](https://github.com/666ghj/MiroFish) swarm intelligence architecture. Adapted with Quorum's epistemic guarantees: hard territory boundaries, evidence tiers, structural challenge, independent validation.
 
 ```bash
-# Stage 1 — Gather (expensive, once)
-/quorum "EEG auth methods" --mode research --full --output _swarm/eeg-auth.md
-
-# Stage 2 — Validate (cheap, re-run as needed)
-/quorum "Fact-check for hallucinations" --artifact _swarm/eeg-auth.md --rigor high --no-web
+/quorum "Impact of EU AI Act on BCI startups" --swarm
+/quorum "Will neural data be biometric by 2028?" --swarm --predict --size 200
+/quorum "Red team our auth" --swarm --branches "network,app,social,physical,supply-chain"
 ```
 
-**Three-tier verdicts:** Every validated claim exits as **VALIDATED** (evidence found), **FLAGGED** (needs human review), or **BLOCKED** (unsupported/contradicted). Panel provenance and coverage notices included in every report.
+[Full swarm mode architecture →](docs/ARCHITECTURE.md#swarm-mode---swarm) | [Full changelog →](docs/CHANGELOG.md)
 
-Works on any research — not just Quorum output. Feed it a paper draft, competitor analysis, literature review, anything.
+<details>
+<summary><strong>Previous releases</strong></summary>
 
-[Full release notes →](https://github.com/qinnovates/quorum/releases/tag/v3.1.0)
+### v4.1.0 — Divergence Engine
+Provocateur archetype, EXPLORE mode, structural protections (adversarial immunity, Socratic follow-ups), security hardening, SKILL.md split.
+
+### v4.0.0 — Adaptive Intelligence
+Project Profiles, Task Classification Gate, Config Transparency Block, Adaptive Output Templates.
+
+### v3.2.0 — Security Hardening
+Removed shell access from agent manifest, injection defense on all templates, credential detection patterns.
+
+### v3.1.0 — Epistemic Quality Gate
+Two-stage research + validation workflow. VALIDATED / FLAGGED / BLOCKED verdicts.
+
+### v3.0.0 — Subteams & Dialectic
+Subteam/Org modes, Socrates + Plato structural roles, Dialectic mode, 5-layer validation pipeline.
+
+[Full changelog →](docs/CHANGELOG.md)
+</details>
 
 ## On Hallucination
 

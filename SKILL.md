@@ -1,9 +1,9 @@
 ---
 name: quorum
 description: "Quorum: orchestrate a swarm of AI experts on any question. Specialists debate, research, and validate — then a polymath supervisor delivers the verdict. One command, multiple minds, stress-tested answers."
-argument-hint: '"your question" [--ponder] [--rigor low|medium|high|dialectic] [--size N] [--full] [--lite] [--artifact PATH] [--mode research|review|hybrid] [--teams "a,b,c"] [--org]'
+argument-hint: '"your question" [--ponder] [--rigor low|medium|high|dialectic] [--size N] [--full] [--lite] [--artifact PATH] [--mode research|review|hybrid] [--teams "a,b,c"] [--org] [--swarm] [--predict]'
 disable-model-invocation: true
-version: 4.1.0
+version: 5.0.0
 author: Kevin Qi (qinnovate.com)
 homepage: https://qinnovate.com
 allowed-tools:
@@ -118,7 +118,14 @@ Every query scored on 4 dimensions (Domain count, Certainty demand, Scope, Artif
 | 9-10 | 10-14 | org (3 teams) | high |
 | 11-12 | 15-17 | org (3-4 teams) | high |
 
-Override rules: binary "X or Y?" → dialectic. Feasibility → dialectic first. D >= 3 → auto-org. Explicit flags always override.
+**Swarm mode** (`--swarm`) overrides structure selection. When set, score determines swarm size:
+| Score | Default Swarm Size | Rounds | Schedule |
+|-------|-------------------|--------|----------|
+| 0-4 | 20 (minimum) | 3 | round-robin |
+| 5-8 | 50-100 | 5 | round-robin |
+| 9-12 | 100-500 | 8 | reactive |
+
+Override rules: binary "X or Y?" → dialectic. Feasibility → dialectic first. D >= 3 → auto-org. `--swarm` overrides structure. `--predict` forces probabilistic scheduling. Explicit flags always override.
 
 ### Adaptive Output Templates
 
@@ -163,6 +170,12 @@ Override rules: binary "X or Y?" → dialectic. Feasibility → dialectic first.
 | `--no-save` | — | Don't persist to disk |
 | `--no-cross-ai` | — | Skip independent validation |
 | `--redact` | — | Strip PII from saved session |
+| `--swarm` | — | Enable swarm mode (20-1000+ agents, taxonomy-partitioned) |
+| `--predict` | — | Prediction mode: probabilistic activation, sentiment tracking |
+| `--branches "a,b,c"` | auto | Manual top-level taxonomy branches (swarm only) |
+| `--schedule STRATEGY` | `round-robin` | Activation schedule: `round-robin`, `reactive`, `priority`, `probabilistic` |
+| `--taxonomy show` | — | Show generated taxonomy without running |
+| `--interviews N` | 5 | Agents the supervisor interviews directly (swarm only) |
 | `--dry-run` | — | Show config reasoning without running |
 | `--profile show` | — | Display project profile |
 | `--profile update` | — | Rescan and regenerate profile |
@@ -175,6 +188,12 @@ Override rules: binary "X or Y?" → dialectic. Feasibility → dialectic first.
 /quorum "Validate registrar changes" --org                           # Cross-domain org
 /quorum "Should we ship this?" --teams "engineering,legal,product"   # Manual teams
 /quorum "What am I missing about our auth approach?" --ponder        # Exploratory
+
+# Swarm mode (20-1000+ agents)
+/quorum "Impact of EU AI Act on BCI startups" --swarm                # Auto-taxonomy, 50 agents
+/quorum "Red team our auth system" --swarm --size 200                # 200 attack vectors
+/quorum "Will neural data be biometric by 2028?" --swarm --predict   # Prediction mode
+/quorum "EEG authentication landscape" --swarm --schedule reactive   # Reactive scheduling
 ```
 
 ## Safety & Privacy
@@ -248,17 +267,25 @@ Enforced constraints, not aspirational instructions:
 - **Socratic Remainder** — every report states the unexamined premise the answer rests on
 - **Preserve-if-unique** — uniqueness overrides signal strength in triage
 
-## 5-Tier Architecture
+## 6-Tier Architecture
 
 ```
-Tier 0: Context Engine (reads project, classifies task, auto-configures)
-Tier 1: Supervisor (designs the debate, writes the verdict)
-Tier 2: Structural Roles (Socrates questions, Plato audits — no position)
+Tier 0: Context Engine      (reads project, classifies task, auto-configures)
+Tier 1: Supervisor           (designs debate / post-hoc synthesizer in swarm mode)
+Tier 2: Structural Roles     (Socrates questions, Plato audits — no position)
 Tier 3: Team Leads / Analysis (take positions, debate, synthesize)
-Tier 4: Research / Team Members (gather evidence, cite sources)
+Tier 4: Research / Members    (gather evidence, cite sources)
 ```
 
-7 phases: Setup → Independent Work → Triage → Cross-Review → Synthesis → Validation → Final Report
+**Swarm Mode adds 3 infrastructure tiers:**
+```
+Tier S1: Partition Engine     (MECE taxonomy → non-overlapping agent territories)
+Tier S2: Environment Server   (shared state store — agents POST/REACT/HANDOFF/SHIFT)
+Tier S3: Activation Scheduler (probabilistic — only fraction active per round)
+```
+
+Standard: 7 phases (Setup → Independent Work → Triage → Cross-Review → Synthesis → Validation → Final Report)
+Swarm: 8 phases (Taxonomy → Spawn → Simulation Rounds → Pattern Extraction → Synthesis → Challenge → Validation → Final Report)
 
 > Full architecture, phases, composition rules, subteam mode, dialectic mode, divergence engine, anti-boxing rules: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 > All prompt templates: [docs/PROMPTS.md](docs/PROMPTS.md)

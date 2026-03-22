@@ -48,6 +48,17 @@
 - [Output Format](#output-format)
 - [Tool Permissions by Role](#tool-permissions-by-role)
 - [Session Persistence](#session-persistence)
+- [Swarm Mode (`--swarm`)](#swarm-mode---swarm)
+  - [When to Use Swarm Mode](#when-to-use-swarm-mode)
+  - [Architecture: 6-Tier Hierarchy](#architecture-6-tier-hierarchy)
+  - [Tier S1: Partition Engine](#tier-s1-partition-engine-no-overlap-guarantee)
+  - [Tier S2: Environment Server](#tier-s2-environment-server-shared-state)
+  - [Tier S3: Activation Scheduler](#tier-s3-activation-scheduler)
+  - [Swarm Mode Phases](#swarm-mode-phases-modified-workflow)
+  - [Swarm Mode Invocation](#swarm-mode-invocation)
+  - [Swarm Mode Output Format](#swarm-mode-output-format)
+  - [Swarm vs Standard: Decision Guide](#swarm-vs-standard-decision-guide)
+  - [How This Differs from MiroFish](#how-this-differs-from-mirofish)
 - [Practical Limits](#practical-limits)
 
 ---
@@ -718,11 +729,465 @@ State saved to `_swarm/sessions/SESSION_ID.json` unless `--no-save` is set.
 
 ---
 
+## Swarm Mode (`--swarm`)
+
+Swarm mode scales Quorum from dozens to **hundreds or thousands** of agents by replacing per-agent orchestration with environment-based coordination. Inspired by swarm intelligence prediction engines (MiroFish/OASIS), adapted to Quorum's epistemic quality gate philosophy.
+
+**The core shift:** At 17 agents, the supervisor can read every report. At 500, it cannot. Swarm mode changes the supervisor from a per-agent orchestrator to a **post-hoc synthesizer** that reads emergent patterns from a shared environment, not individual agent outputs.
+
+### When to Use Swarm Mode
+
+| Scenario | Why Swarm | Why NOT Standard |
+|----------|-----------|-----------------|
+| Prediction markets / forecasting | Emergent opinion dynamics reveal collective intelligence | 8 agents can't simulate population-scale belief shifts |
+| Landscape surveys (100+ papers) | Hundreds of research partitions cover exhaustively | Standard mode caps at ~15 search partitions |
+| Policy impact modeling | Diverse stakeholder personas surface non-obvious coalitions | Standard mode can't represent 50+ stakeholder types |
+| Red team at scale | Hundreds of attack vectors explored simultaneously | Standard mode covers top 10-15 attack surfaces |
+| Consensus building | Genuine Delphi-method convergence across expert populations | Standard mode forces convergence through supervisor, not emergence |
+
+### Architecture: 6-Tier Hierarchy
+
+```
+Tier 0: Context Engine        (classifies, configures — unchanged)
+Tier 1: Supervisor            (post-hoc synthesizer — reads environment, not agents)
+Tier 2: Structural Roles      (Socrates + Plato — operate on clusters, not individuals)
+NEW → Tier S1: Partition Engine    (generates non-overlapping agent territories from taxonomy)
+NEW → Tier S2: Environment Server  (shared state store — agents read/write, patterns emerge)
+NEW → Tier S3: Activation Scheduler (probabilistic — only fraction active per round)
+Tier 3: Swarm Agents          (hundreds+ with unique territory assignments)
+Tier 4: Research Agents       (partitioned evidence gathering — unchanged)
+```
+
+### Tier S1: Partition Engine (No-Overlap Guarantee)
+
+The Partition Engine is the key architectural difference from MiroFish. Where MiroFish relies on knowledge graph entity uniqueness (which allows soft overlap), Quorum enforces **hard territory boundaries** through taxonomic partitioning.
+
+#### How It Works
+
+1. **Taxonomy Generation.** The supervisor (or a dedicated Taxonomy Agent) decomposes the problem space into a **mutually exclusive, collectively exhaustive (MECE) taxonomy.** Each node in the taxonomy is a territory.
+
+```
+Example: "Predict the impact of EU AI Act on BCI startups"
+
+Taxonomy:
+├── Regulatory (territory)
+│   ├── Classification requirements
+│   ├── High-risk AI obligations
+│   ├── Prohibited practices
+│   └── Enforcement mechanisms
+├── Technical Compliance
+│   ├── Data governance (neural data)
+│   ├── Transparency requirements
+│   ├── Human oversight mechanisms
+│   └── Robustness & accuracy standards
+├── Market Impact
+│   ├── Funding/VC sentiment
+│   ├── Insurance & liability
+│   ├── Competitive positioning (EU vs US vs China)
+│   └── M&A dynamics
+├── Stakeholder Response
+│   ├── Device manufacturers
+│   ├── Clinical researchers
+│   ├── Patient advocacy groups
+│   ├── Data protection authorities
+│   └── Standards bodies (IEEE, ISO)
+└── Second-Order Effects
+    ├── Innovation migration patterns
+    ├── Regulatory arbitrage
+    ├── Open-source BCI impact
+    └── Academic freedom constraints
+```
+
+2. **Agent Assignment.** Each leaf node gets exactly one agent. Each agent's persona, stance, and search partition are derived from its territory. No two agents share a territory.
+
+3. **Territory Boundary Enforcement.**
+   - Every agent's prompt includes: `YOUR TERRITORY: [node]. Stay within this boundary. If you discover something relevant to another territory, log it to the Environment as a HANDOFF, do not analyze it yourself.`
+   - The Environment Server tracks handoffs and routes them to the correct territory owner.
+   - This is the structural guarantee against overlap. It is not a suggestion — it is a constraint enforced by prompt design and environment routing.
+
+4. **Taxonomy Depth Scaling.**
+
+| Swarm Size | Taxonomy Depth | Leaf Nodes | Agents |
+|------------|---------------|------------|--------|
+| 20-50 | 2 levels | 15-40 | 1 per leaf |
+| 50-200 | 3 levels | 40-150 | 1 per leaf |
+| 200-1000 | 4 levels | 150-800 | 1 per leaf, some shared at depth 4 |
+| 1000+ | 4+ levels | 800+ | Multiple agents per leaf with sub-partitions |
+
+#### MECE Validation
+
+Before spawning agents, the Partition Engine validates the taxonomy:
+
+- **Mutual Exclusivity:** No leaf node's definition overlaps with another's. If two nodes could claim the same finding, merge them or add a boundary rule.
+- **Collective Exhaustiveness:** The taxonomy covers the full problem space. The supervisor asks: "What findings would have no home in this taxonomy?" If the answer isn't "none," add nodes.
+- **Balance:** No single branch should contain >40% of leaf nodes. Rebalance if lopsided.
+
+### Tier S2: Environment Server (Shared State)
+
+At swarm scale, agents don't pass reports to the supervisor — they write to a shared environment that the supervisor reads post-hoc.
+
+#### Environment Schema
+
+```json
+{
+  "session_id": "swarm-2026-03-22-eu-ai-act",
+  "taxonomy": { ... },
+  "state": {
+    "findings": [
+      {
+        "id": "F-001",
+        "territory": "regulatory/classification-requirements",
+        "agent_id": "A-012",
+        "claim": "BCI devices processing neural data will be classified as high-risk under Annex III",
+        "evidence_tier": "STRONG",
+        "sources": ["EU AI Act Article 6", "Recital 47"],
+        "timestamp": "round-3",
+        "reactions": [
+          { "agent_id": "A-045", "type": "SUPPORT", "note": "Consistent with MDCG guidance" },
+          { "agent_id": "A-078", "type": "CHALLENGE", "note": "Only if intended for clinical decisions" }
+        ],
+        "handoffs": []
+      }
+    ],
+    "handoffs": [
+      {
+        "from_territory": "technical-compliance/data-governance",
+        "to_territory": "regulatory/enforcement-mechanisms",
+        "finding_id": "F-042",
+        "note": "Data governance gap may trigger enforcement — not my territory to analyze"
+      }
+    ],
+    "opinion_clusters": [],
+    "sentiment_trajectory": [],
+    "coalition_map": []
+  }
+}
+```
+
+#### Agent Interactions with the Environment
+
+Agents perform 4 actions per activation round:
+
+| Action | What It Does | Overlap Prevention |
+|--------|-------------|-------------------|
+| **POST** | Publish a finding to the environment (within own territory) | Rejected if territory mismatch |
+| **REACT** | Support or challenge another agent's finding with evidence | Cross-territory reactions allowed (bringing outside perspective) |
+| **HANDOFF** | Flag a finding for a different territory's agent | Routed by Partition Engine; original agent does not analyze |
+| **SHIFT** | Update own position based on accumulated evidence | Logged to sentiment trajectory for pattern detection |
+
+**What agents cannot do:**
+- Post findings outside their territory
+- Analyze handoffs meant for other territories
+- See the full environment state (each agent sees: own territory + findings they've reacted to + handoffs addressed to them)
+
+#### Pattern Detection (Post-Hoc)
+
+The Environment Server tracks emergent patterns that no individual agent can see:
+
+| Pattern | Detection Method | Signal |
+|---------|-----------------|--------|
+| **Opinion Cluster** | 5+ agents in different territories converge on same conclusion independently | High-confidence finding (independent convergence > directed consensus) |
+| **Polarization** | Two groups of agents with opposing conclusions, both well-evidenced | Genuine disagreement — preserve both sides |
+| **Cascade** | One finding triggers a chain of SUPPORT reactions across territories | Possible groupthink OR genuine insight — flag for supervisor |
+| **Isolation** | An agent's findings receive zero reactions from any other agent | Potential blind spot OR irrelevant territory — supervisor decides |
+| **Coalition** | Agents from unrelated territories align on a recommendation | Cross-domain validation — high signal |
+
+### Tier S3: Activation Scheduler
+
+Not all agents run every round. The Activation Scheduler determines which agents are active per round, solving the compute scaling problem.
+
+#### Scheduling Strategies
+
+| Strategy | How It Works | When to Use |
+|----------|-------------|-------------|
+| **Round-Robin** | Each agent activates once per N rounds | Default. Predictable, fair coverage |
+| **Reactive** | Agents activate when their territory receives a handoff or challenge | Resource-efficient. Best for large swarms (500+) |
+| **Priority-Weighted** | Agents in high-activity territories activate more frequently | When some territories are clearly more contested |
+| **Probabilistic** | Each agent has an activation probability per round (MiroFish-style) | Maximum emergence. Best for prediction/forecasting |
+
+#### Round Budget
+
+| Swarm Size | Recommended Rounds | Active Per Round | Total Agent-Activations |
+|------------|-------------------|------------------|------------------------|
+| 20-50 | 3-5 | All | 60-250 |
+| 50-200 | 5-8 | 30-50% | 125-800 |
+| 200-1000 | 8-15 | 10-20% | 320-3000 |
+| 1000+ | 10-20 | 5-10% | 500-2000 |
+
+The supervisor sets the round budget based on the question's complexity and available compute. More rounds = more emergence, more cost.
+
+### Swarm Mode Phases (Modified Workflow)
+
+Standard Quorum has 7 phases. Swarm mode collapses and restructures them:
+
+```
+Phase S0: Taxonomy Generation (Partition Engine builds MECE tree)
+Phase S1: Agent Spawning (one agent per territory, persona derived from node)
+Phase S2: Simulation Rounds (agents POST, REACT, HANDOFF, SHIFT in environment)
+Phase S3: Pattern Extraction (Environment Server identifies clusters, polarizations, cascades)
+Phase S4: Supervisor Synthesis (reads patterns + environment state, writes report)
+Phase S5: Structural Challenge (Socrates questions clusters, Plato audits evidence across territories)
+Phase S6: Independent Validation (unchanged — cross-AI gate)
+Phase S7: Final Report (unchanged — supervisor's verdict)
+```
+
+#### Phase S0: Taxonomy Generation
+
+The supervisor (or Taxonomy Agent) generates the MECE taxonomy:
+
+1. Decompose the problem into 3-7 top-level branches
+2. Each branch gets 3-8 leaf nodes
+3. Validate MECE properties (no overlap, full coverage, balanced)
+4. Show taxonomy to user for approval (unless `--yes`)
+
+**Taxonomy Agent Prompt:**
+```
+Decompose this problem into a mutually exclusive, collectively exhaustive taxonomy.
+
+Topic: {{TOPIC}}
+
+Requirements:
+- Every possible finding must have exactly ONE home in the taxonomy
+- No two leaf nodes should be able to claim the same evidence
+- Aim for {{TARGET_AGENTS}} leaf nodes (±20%)
+- Each leaf node needs a 1-sentence scope definition
+- Add boundary rules where adjacent nodes could overlap
+
+Output:
+## Taxonomy Tree (indented)
+## Boundary Rules (which adjacent nodes need disambiguation)
+## Coverage Check (what findings would have no home? fix until answer is "none")
+```
+
+#### Phase S1: Agent Spawning
+
+For each leaf node, the Partition Engine generates:
+
+```
+Agent A-{{ID}}:
+  Territory: {{TAXONOMY_PATH}}
+  Scope: {{LEAF_NODE_DEFINITION}}
+  Persona: {{GENERATED_FROM_TERRITORY — e.g., "Patent attorney" for IP/licensing territory}}
+  Stance: {{ASSIGNED — supervisor picks to maximize productive disagreement}}
+  Boundary: {{WHAT IS NOT YOUR TERRITORY — explicit exclusions}}
+  Activation: {{SCHEDULE — round-robin / reactive / probabilistic}}
+```
+
+Adversarial agents are injected at the branch level, not the leaf level:
+- 1 Devil's Advocate per top-level branch (argues against the branch's emerging consensus)
+- 1 Domain Outsider per 3 branches (expert from a domain not in the taxonomy at all)
+- Socrates and Plato operate at the cluster level in Phase S5
+
+#### Phase S2: Simulation Rounds
+
+Each round:
+
+1. Activation Scheduler selects which agents run this round
+2. Active agents receive: their territory scope + recent environment state within their visibility window
+3. Agents POST findings, REACT to others, HANDOFF cross-territory discoveries, SHIFT positions
+4. Environment Server logs all actions, updates state, detects patterns
+5. Repeat for N rounds
+
+**Agent visibility window** (prevents information overload):
+- Own territory: full history
+- Adjacent territories (taxonomy siblings): last 2 rounds
+- Distant territories: only findings with 3+ reactions (high-signal filter)
+- Handoffs addressed to them: always visible
+
+**Convergence detection:** If 80%+ of agents have not SHIFTED positions in the last 2 rounds, the scheduler can terminate early (rounds saved → cost saved). The supervisor is notified of early convergence and treats it with the same suspicion as standard Quorum's early termination (inverted scrutiny — see Anti-Boxing Rule 6).
+
+#### Phase S3: Pattern Extraction
+
+The Environment Server produces a **Pattern Report** for the supervisor:
+
+```markdown
+## Opinion Clusters (independent convergence)
+- Cluster 1: "High-risk classification is inevitable" (14 agents across 4 branches)
+- Cluster 2: "Enforcement will be delayed 2-3 years" (8 agents across 3 branches)
+
+## Polarizations (evidenced disagreement)
+- Split 1: "Innovation migration to US" (7 agents) vs "EU-first advantage" (5 agents)
+
+## Cascades (viral findings)
+- F-042 (data governance gap) triggered 12 reactions in 3 rounds across 5 territories
+
+## Isolated Findings (zero reactions — potential blind spots)
+- F-189 (insurance market impact) — no agent reacted
+
+## Coalition Map
+- Regulatory + Technical Compliance agents aligned on recommendation R-3
+- Market Impact + Stakeholder agents aligned on opposing recommendation R-7
+
+## Sentiment Trajectory
+- Round 1-3: Optimistic bias (most agents started with "manageable impact")
+- Round 4-6: Shift toward pessimism after F-042 cascade
+- Round 7-8: Stabilized at cautious-pragmatic
+```
+
+#### Phase S4: Supervisor Synthesis
+
+The supervisor reads the Pattern Report (not 500 individual agent reports). This is the key scaling mechanism — the supervisor's input is O(patterns), not O(agents).
+
+The supervisor:
+1. Reads the Pattern Report + top 10 highest-reaction findings in full
+2. Reads the full reports of coalition leaders (the agent in each cluster/coalition with the most reactions)
+3. Interviews 3-5 agents directly (MiroFish's InterviewAgents pattern) — picks agents from isolated findings and minority positions
+4. Writes the synthesis using the same editorial judgment as standard Quorum Phase 4
+
+#### Phase S5: Structural Challenge
+
+Socrates and Plato operate on clusters, not individual agents:
+
+- **Socrates** asks each opinion cluster ONE question targeting its weakest assumption
+- **Plato** audits the evidence base of the top 5 clusters — are the findings SUPPORTED, PARTIALLY SUPPORTED, or UNSUPPORTED?
+- Coalition leaders respond on behalf of their cluster (not every agent)
+
+### Swarm Mode Invocation
+
+```bash
+# Basic swarm (50 agents, auto-taxonomy)
+/quorum "Impact of EU AI Act on BCI startups" --swarm
+
+# Sized swarm
+/quorum "Predict BCI market consolidation 2027" --swarm --size 200
+
+# Swarm with manual taxonomy branches
+/quorum "Red team our auth system" --swarm --branches "network,application,social,physical,supply-chain"
+
+# Prediction mode (probabilistic activation, max emergence)
+/quorum "Will neural data be classified as biometric by 2028?" --swarm --predict
+
+# Swarm with specific scheduling
+/quorum "Landscape survey: EEG authentication" --swarm --schedule reactive --rounds 10
+```
+
+#### New Flags (Swarm Mode Only)
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `--swarm` | — | Enable swarm mode |
+| `--branches "a,b,c"` | auto | Manual top-level taxonomy branches |
+| `--predict` | — | Prediction mode: probabilistic activation, sentiment tracking, coalition detection |
+| `--schedule STRATEGY` | `round-robin` | `round-robin`, `reactive`, `priority`, `probabilistic` |
+| `--rounds N` | auto | Simulation rounds (3-20) |
+| `--taxonomy show` | — | Show generated taxonomy without running |
+| `--interviews N` | 5 | Number of agents the supervisor interviews directly in Phase S4 |
+
+### Swarm Mode Output Format
+
+```markdown
+# Swarm Report: {{TOPIC}}
+
+**Config:** {{N}} agents | {{R}} rounds | schedule: {{STRATEGY}} | territories: {{LEAF_COUNT}}
+**Taxonomy:** {{top-level branches}}
+**Patterns:** {{cluster_count}} clusters, {{polarization_count}} polarizations, {{cascade_count}} cascades
+
+---
+
+## Supervisor's Assessment
+The supervisor's authored judgment — informed by pattern analysis, coalition dynamics,
+and direct agent interviews. This is not a vote count. It is editorial judgment
+over emergent collective intelligence.
+
+## Emergent Consensus (independent convergence across territories)
+Findings that multiple agents in unrelated territories reached independently.
+These are highest-confidence — no coordination, same conclusion.
+
+## Polarizations (genuine disagreements with evidence on both sides)
+Each with: Position A (agents, evidence), Position B (agents, evidence), supervisor's assessment
+
+## Cascades (findings that changed the swarm's trajectory)
+Key findings that triggered chain reactions across territories.
+
+## Isolated Signals (potential blind spots the swarm ignored)
+Findings with zero reactions — the supervisor decides if they matter.
+
+## Coalition Map
+Which territory groups aligned on which recommendations, and why.
+
+## Sentiment Trajectory
+How the swarm's collective position evolved across rounds.
+
+## Priority Actions (ranked by supervisor, informed by patterns)
+
+## Structural Challenge Results
+Socrates' questions and cluster responses. Plato's evidence audit.
+
+## Confidence & Verification
+- Validated by independent convergence: {{list}}
+- Validated by structural challenge: {{list}}
+- Disputed (polarized): {{list}}
+- Unexamined (isolated): {{list}}
+
+---
+
+## Appendix: Taxonomy Tree
+<details><summary>Full taxonomy with territory assignments</summary>
+{{taxonomy}}
+</details>
+
+## Appendix: Pattern Report
+<details><summary>Raw pattern extraction from Environment Server</summary>
+{{pattern_report}}
+</details>
+
+## Appendix: Agent Interviews
+<details><summary>Supervisor's direct interviews with selected agents</summary>
+{{interviews}}
+</details>
+```
+
+### Swarm vs Standard: Decision Guide
+
+| Question | Standard (3-17) | Swarm (20-1000+) |
+|----------|----------------|-------------------|
+| Need depth on a focused question? | Yes | Overkill |
+| Need breadth across a complex landscape? | Limited | Yes |
+| Need prediction / forecasting? | Not designed for it | Yes (`--predict`) |
+| Need exhaustive red teaming? | Covers top vectors | Covers hundreds of vectors |
+| Need Delphi-method consensus? | No (supervisor-driven) | Yes (emergent convergence) |
+| Budget-sensitive? | ~300-500K tokens | ~1-5M tokens |
+| Time-sensitive? | 3-8 minutes | 10-30 minutes |
+
+### Practical Limits (Swarm Mode)
+
+- **Sweet spot:** 50-200 agents, 5-8 rounds, reactive scheduling
+- **Token budget:** ~1-5M tokens (scales with agent count × rounds × activation rate)
+- **Time:** 10-30 minutes depending on size and scheduling
+- **Diminishing returns:** Above 500 agents, pattern quality plateaus unless the taxonomy has genuine depth
+- **Minimum viable swarm:** 20 agents (below this, use standard org mode)
+- **Taxonomy depth limit:** 4 levels. Beyond that, leaf nodes become too narrow to produce meaningful findings
+
+### How This Differs from MiroFish
+
+| Dimension | MiroFish | Quorum Swarm Mode |
+|-----------|----------|-------------------|
+| **Purpose** | Simulation (what would happen?) | Epistemic quality (what is true?) |
+| **Overlap prevention** | Soft (entity-based, allows drift) | Hard (MECE taxonomy, territory enforcement, handoffs) |
+| **Supervisor** | Post-hoc only (ReportAgent) | Post-hoc synthesizer + structural challenge (Socrates/Plato) |
+| **Agent interaction** | Free-form (social media simulation) | Structured (POST/REACT/HANDOFF/SHIFT within territory rules) |
+| **Aggregation** | Qualitative synthesis of interaction logs | Pattern extraction + editorial judgment + evidence audit |
+| **Validation** | None | 5-layer pipeline + independent cross-AI gate |
+| **Anti-groupthink** | None (emergence can amplify bias) | Anti-boxing rules + inverted early termination + adversarial immunity |
+
+Quorum Swarm Mode takes MiroFish's scaling mechanism (environment-based coordination, probabilistic activation, emergent pattern detection) and wraps it in Quorum's epistemic guarantees (MECE territories, evidence tiers, structural challenge, independent validation). The result is collective intelligence at scale with built-in bullshit detection.
+
+---
+
 ## Practical Limits
 
+### Standard Mode
 - Sweet spot: 8-12 agents, 2 rounds, cross-AI on
 - Token budget: ~300-500K for full run (RESEARCH mode uses more due to web searches)
 - Time: 3-8 minutes depending on mode and cross-AI method
 - Diminishing returns above 15 agents
 - RESEARCH mode adds ~2-3 minutes for evidence gathering but dramatically improves output quality
 - Cross-AI gate adds ~1-2 minutes but catches groupthink
+
+### Swarm Mode
+- Sweet spot: 50-200 agents, 5-8 rounds, reactive scheduling
+- Token budget: ~1-5M tokens
+- Time: 10-30 minutes
+- Minimum viable swarm: 20 agents
+- Prediction mode (`--predict`) adds sentiment tracking overhead but produces forecasting-grade output
+- Taxonomy generation adds ~1-2 minutes upfront but prevents all downstream overlap
