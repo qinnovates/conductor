@@ -884,6 +884,84 @@ The Judge declares one of three outcomes:
 - **TENSION** — An irreducible tradeoff was identified. Report names the tension and the evidence on both sides. The user decides.
 - **EXHAUSTED** — No convergence after max rounds. Report shows the best surviving proposal and the unresolved attacks.
 
+### Structured Vote (Near-Consensus Tiebreaker)
+
+When the convergence score lands in the **close-call zone** — positions are similar but not converged — a structured vote breaks the deadlock.
+
+**When the vote triggers:**
+
+```
+C* ∈ [0.65, 0.8)  → VOTE (near-consensus — positions are close, need a tiebreaker)
+C* ≥ 0.8          → CONVERGED (no vote needed — clear consensus)
+C* ∈ [0.5, 0.65)  → continue rounds (too far apart, more debate needed)
+C* < 0.5          → check for TENSION or EXHAUSTED
+```
+
+The vote also triggers in default mode (non-converse) when the supervisor detects a near-split: two positions each have 40-60% of agents with similar evidence quality, and the supervisor cannot differentiate by reasoning strength alone.
+
+**How the vote works:**
+
+Each agent casts a structured ballot:
+
+```
+VOTE: {
+  position: "A" | "B" | "ABSTAIN",
+  confidence: 1-10,
+  rationale: "one sentence — the single strongest reason",
+  evidence_cited: true | false
+}
+```
+
+**Votes are weighted, not counted.** Raw headcount is not the decision mechanism:
+
+```
+weighted_vote = confidence × evidence_multiplier × independence_multiplier
+
+where:
+  evidence_multiplier:
+    1.5 if rationale cites a specific source from the research pool
+    1.0 if rationale is reasoning-based without citation
+    0.5 if rationale is preference-based ("I think..." without evidence)
+
+  independence_multiplier:
+    1.2 if agent's Phase 1 report had low overlap with other voters for same position
+    1.0 otherwise
+    0.8 if agent's Phase 1 report had high overlap (possible echo voting)
+```
+
+**Vote output in the verdict:**
+
+```
+STRUCTURED VOTE — triggered at C* = 0.72 (near-consensus)
+
+Position A: "Use event sourcing"
+  Architect: 8/10, evidence-cited (weighted: 14.4)
+  Realist: 7/10, evidence-cited (weighted: 12.6)
+  Breaker: 6/10, reasoning-based (weighted: 6.0)
+
+Position B: "Use traditional CRUD + audit log"
+  Pragmatist: 9/10, evidence-cited (weighted: 16.2)
+  Domain Outsider: 5/10, reasoning-based (weighted: 5.0)
+
+Weighted total: A = 33.0, B = 21.2
+Margin: A leads by 36% (clear weighted margin)
+
+Supervisor decision: Position A, informed by weighted vote + reasoning quality
+```
+
+**What the vote IS:**
+- An additional structured signal for the supervisor in close calls
+- Weighted by evidence quality and independence (not raw headcount)
+- Visible in the verdict so the user sees how the decision was made
+
+**What the vote is NOT:**
+- Not majority-rules — the supervisor still authors the synthesis and can override the vote if reasoning quality warrants it
+- Not used when consensus is clear (C* ≥ 0.8) or positions are far apart (C* < 0.5)
+- Not a replacement for the convergence formula — it supplements it in the ambiguous middle zone
+- Not used in dialectic mode (2-agent Socratic dialogue has no majority to tally)
+
+**Supervisor override:** If the supervisor disagrees with the weighted vote result, they must state the override and its reasoning in the verdict: "Weighted vote favored Position A (33.0 vs 21.2). Supervisor overrides to Position B because [specific reasoning]. The vote result and override are preserved for user review."
+
 ### Converse vs Other Modes
 
 | Property | Standard | Dialectic | Converse | Swarm |

@@ -409,7 +409,11 @@ By default, the supervisor picks 7-15 agents based on question complexity. To go
 
 **Anti-duplication:** No repetition across rounds. "This won't work" is not allowed — must include what WOULD work. No free nihilism. 40/60 dissent ratio (Nemeth 2001, Liang 2023).
 
-**Three outcomes:** CONVERGED (survived attack) / TENSION (irreducible tradeoff — user decides) / EXHAUSTED (diminishing returns).
+**Four outcomes:** CONVERGED (survived attack) / **VOTE** (near-consensus tiebreaker) / TENSION (irreducible tradeoff — user decides) / EXHAUSTED (diminishing returns).
+
+**Structured Vote (near-consensus tiebreaker):**
+
+When C* is in the close-call zone [0.65, 0.8) — positions are similar but not converged — agents cast a structured vote: position + confidence (1-10) + one-sentence rationale. Votes are **weighted by evidence quality and independence**, not raw headcount. A well-sourced vote from an independent agent counts more than an unsourced vote that echoes another agent. The supervisor uses the weighted result to inform (not override) the synthesis. Vote result is visible in the verdict. [Full spec →](docs/ARCHITECTURE.md#structured-vote-near-consensus-tiebreaker)
 
 **Auto-selected structures (supervisor decides which to layer on):**
 - **Teams** — if 3+ domains with different incentives. Teams deliberate internally, leads cross-challenge. Socrates questions weakest points, Plato audits evidence.

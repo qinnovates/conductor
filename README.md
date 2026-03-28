@@ -503,7 +503,9 @@ The full panel iterates across rounds until a solution survives sustained attack
 
 **Anti-duplication:** No repetition across rounds. "This won't work" is not allowed. Must include what WOULD work. No free nihilism. The 40/60 dissent-to-constructive ratio is calibrated: AI debate performance drops at 4+ dissent agents from context overload (Liang et al. 2023), and authentic critics outperform assigned devil's advocates (Nemeth 2001).
 
-**Three outcomes:** CONVERGED (survived attack) / TENSION (irreducible tradeoff — user decides) / EXHAUSTED (diminishing returns).
+**Four outcomes:** CONVERGED (survived attack) / **VOTE** (near-consensus tiebreaker) / TENSION (irreducible tradeoff — user decides) / EXHAUSTED (diminishing returns).
+
+**Structured Vote:** When positions are close but not converged (C* between 0.65 and 0.8), agents cast a weighted vote — position, confidence (1-10), and one-sentence rationale. Votes are weighted by evidence quality and agent independence, not raw headcount. A well-sourced vote from an independent agent counts more than an unsourced echo. The vote result is visible in the verdict and informs the supervisor's synthesis. The supervisor can override the vote with stated reasoning.
 
 The supervisor also auto-selects structure as needed:
 - **Teams** — if 3+ domains with different incentives. Teams deliberate internally, leads cross-challenge. Socrates questions weakest points, Plato audits evidence

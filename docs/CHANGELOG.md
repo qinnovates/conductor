@@ -4,6 +4,13 @@ All notable changes to Quorum are documented here.
 
 ## [v7.1.0](https://github.com/qinnovates/quorum/releases/tag/v7.1.0) — 2026-03-28
 
+### Added — Structured Vote (Near-Consensus Tiebreaker)
+- **Weighted voting** for close calls — when convergence score C* is in [0.65, 0.8), agents cast structured ballots: position + confidence (1-10) + one-sentence rationale
+- **Evidence-weighted, not headcount** — votes multiplied by evidence quality (1.5x for cited sources, 0.5x for preference-only) and independence (1.2x if low overlap with co-voters, 0.8x if echo voting detected)
+- **Supervisor can override** with stated reasoning — vote informs the synthesis, doesn't dictate it
+- **Visible in verdict** — full vote breakdown with weighted totals shown to user
+- Also triggers in default mode when supervisor detects a 40-60% near-split with similar evidence quality
+
 ### Added — Ratify Mode (`--ratify`)
 - **Human-in-the-loop approval gate** — after deliberation, `--ratify` adds a structurally independent Auditor review and pauses for human approval before the verdict is final
 - **Auditor agent** — fresh agent invocation with structural independence (reads ONLY original question + verdict, no phase history). Evaluates: logical coherence, evidence sufficiency, scope completeness, internal consistency, actionability. Research basis: Lorenz et al. (2011) social influence isolation
