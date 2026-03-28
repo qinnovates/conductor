@@ -28,6 +28,16 @@ Built by [qinnovate](https://qinnovate.com) | [Full docs](docs/ARCHITECTURE.md)
 
 ---
 
+## Documentation
+
+- **[Usage Guide](docs/GUIDE.md)** — When to use flat vs max vs reviewers vs swarm. Decision matrix, cost guide, examples
+- **[Architecture](docs/ARCHITECTURE.md)** — Full phase-by-phase technical specification, structured reasoning metrics (convergence, bias detection, independence, evidence scorecard)
+- **[Prompt Templates](docs/PROMPTS.md)** — All agent templates with variable reference
+- **[Safety & Privacy](docs/SAFETY.md)** — Guardrails, privacy disclosure, tool permissions
+- **[Privacy Policy](https://qinnovate.com/privacy)** — Full privacy policy for all qinnovate tools
+- **[Changelog](docs/CHANGELOG.md)** — Version history and what changed
+- **[Releases](https://github.com/qinnovates/quorum/releases)** — GitHub releases with download links
+
 ## What You Get
 
 ```
@@ -36,32 +46,52 @@ QUORUM VERDICT — 5 agents, 2 adversarial, 1 round
 ═══════════════════════════════════════════════════
 
 EXECUTIVE SUMMARY
-PostgreSQL. The panel reached strong consensus (4-1) that PostgreSQL
-is the right choice for a service with relational data, complex queries,
-and no hyperscale write requirements. The dissenting agent (Cloud
-Architect) argued DynamoDB wins on operational simplicity at scale,
-but could not demonstrate a query pattern that requires it.
+Build it yourself. The panel reached strong consensus (4-1) that
+using an AI coding assistant to build a custom solution beats
+adopting an off-the-shelf SaaS for this use case. The workflow is
+specific enough that no existing tool fits without heavy
+customization, and AI-assisted development now closes the build
+vs. buy gap to under a week. The dissenting agent (Product
+Strategist) argued buy-first to validate demand before investing
+engineering time.
 
 DISAGREEMENT REGISTER
-  Cloud Architect (MINORITY): "DynamoDB eliminates connection pool
-  management entirely. At 10K concurrent connections, PostgreSQL
-  requires PgBouncer and careful tuning."
-  → Rebuttal (Database Engineer): "RDS Proxy handles this. The
-  operational cost is one config change, not an architecture change."
+  Product Strategist (MINORITY): "Ship with a SaaS integration in
+  2 days. If users engage, then invest in a custom build. You're
+  optimizing for architecture before proving anyone cares."
+  → Rebuttal (Technical Lead): "The SaaS integration requires the
+  same data modeling work. Building custom adds 3 days but
+  eliminates the migration tax and vendor lock-in."
 
 CONFIDENCE: HIGH (4 of 5 sourced claims verified)
-EVIDENCE SCORECARD: 8 claims, 6 STRONG, 1 MODERATE, 1 UNSOURCED
-INDEPENDENCE SCORE: 0.74 (HIGH)
+EVIDENCE SCORECARD: 7 claims, 5 STRONG, 1 MODERATE, 1 UNSOURCED
+INDEPENDENCE SCORE: 0.81 (HIGH)
 BIAS FLAGS: None triggered
 
 PRIORITY ACTIONS
-1. Use PostgreSQL on RDS with read replicas
-2. Design partition key now even if staying relational (future optionality)
-3. Set up PgBouncer or RDS Proxy from day one
+1. Define the data model and API contract first
+2. Use AI-assisted development for the core logic (estimated 3-5 days)
+3. Ship an MVP to 10 users before adding features
 ═══════════════════════════════════════════════════
 ```
 
 That took 2 minutes. One command.
+
+## Example Use Cases
+
+Quorum works on any question worth debating. Here are five:
+
+| | Question | Why Quorum beats a single AI |
+|---|---|---|
+| **Product** | *"Should we launch with a free tier or paid-only?"* | A single agent defaults to "free tier for growth." Quorum's adversarial agents stress-test unit economics, conversion assumptions, and support cost — so you get the tradeoffs, not just the popular answer |
+| **Growth** | *"What's the best channel to acquire our first 1,000 users?"* | One agent gives you a generic list. Quorum agents argue paid vs. organic vs. community with actual CAC estimates, surface which channels are saturated, and flag the ones where your specific audience actually lives |
+| **Content** | *"Is this blog post ready to publish?"* | One agent says "looks good!" Quorum agents review for factual accuracy, tone consistency, SEO gaps, and audience fit — then disagree about what "ready" means until the weak spots are exposed |
+| **Data** | *"Which metrics should we track for our MVP launch?"* | A single agent gives you the standard vanity metrics. Quorum's panel debates leading vs. lagging indicators, argues about what's actually measurable at your stage, and kills the metrics that sound good but drive no decisions |
+| **Design** | *"Should we redesign the onboarding flow or optimize the existing one?"* | One agent picks whichever sounds more impressive. Quorum agents fight over whether the data justifies a redesign, what "optimize" actually means without A/B infrastructure, and whether onboarding is even the real churn problem |
+
+```
+/quorum "Should we launch with a free tier or paid-only?"
+```
 
 ## Quick Start
 
@@ -70,7 +100,7 @@ That took 2 minutes. One command.
 claude install qinnovates/quorum
 
 # Ask anything — 5 agents, auto-configured
-/quorum "Should we use PostgreSQL or DynamoDB for our new service?"
+/quorum "Should we build this feature custom or buy a SaaS tool?"
 ```
 
 That's it. Quorum picks the right experts, makes them debate, and delivers what survived scrutiny. Everything below is details.
@@ -236,7 +266,7 @@ Parallel agents with **mandatory dissent**. Critics must counter-propose, not ju
 
 ```bash
 # Quick opinion — 5 agents, done in 2 minutes
-/quorum "Should we use PostgreSQL or DynamoDB for our new service?"
+/quorum "Should we build this feature custom or buy a SaaS tool?"
 
 # Stress-test a decision — full adversarial convergence
 /quorum "Should we build or buy our auth system?" --max
@@ -673,16 +703,6 @@ Subteam/Org modes, Socrates + Plato, Dialectic mode, 5-layer validation pipeline
 
 [Full changelog ->](docs/CHANGELOG.md)
 </details>
-
-## Documentation
-
-- **[Usage Guide](docs/GUIDE.md)** — When to use flat vs max vs reviewers vs swarm. Decision matrix, cost guide, examples
-- **[Architecture](docs/ARCHITECTURE.md)** — Full phase-by-phase technical specification, structured reasoning metrics (convergence, bias detection, independence, evidence scorecard)
-- **[Prompt Templates](docs/PROMPTS.md)** — All agent templates with variable reference
-- **[Safety & Privacy](docs/SAFETY.md)** — Guardrails, privacy disclosure, tool permissions
-- **[Privacy Policy](https://qinnovate.com/privacy)** — Full privacy policy for all qinnovate tools
-- **[Changelog](docs/CHANGELOG.md)** — Version history and what changed
-- **[Releases](https://github.com/qinnovates/quorum/releases)** — GitHub releases with download links
 
 ## License
 
