@@ -346,9 +346,26 @@ The Auditor is isolated from the panel's deliberation to prevent anchoring (Lore
 6. **Validation** — Web fact-check (preferred) or dissent agent review.
 7. **Final report** — What survived, what's disputed, drift diff (auto-corrected + unresolved), what to do next.
 
-### Max (7-15 recommended, user can override higher)
+### Max (7-15 recommended, scalable)
 
-`--max` always runs **dissent-driven convergence** — the full panel iterates across rounds until a solution survives sustained attack. The supervisor also auto-selects the right structure:
+`--max` always runs **dissent-driven convergence** — the full panel iterates across rounds until a solution survives sustained attack. The supervisor also auto-selects the right structure.
+
+**Scaling beyond 15:**
+
+By default, the supervisor picks 7-15 agents based on question complexity. To go higher:
+
+```bash
+# Supervisor picks agent count (7-15)
+/quorum "question" --max
+
+# You set the agent count explicitly
+/quorum "question" --max --set 25
+
+# Even larger — swarm architecture auto-engages at 20+
+/quorum "question" --max --set 50
+```
+
+`--max --set N` combines deep deliberation (iterative rounds, convergence scoring) with custom scale. At 20+, swarm architecture auto-engages (MECE partitioning, environment coordination). The 15-agent recommended ceiling exists because conversational inequality increases with group size (Dunbar layer 1) — but for research landscapes, red-team exercises, or prediction markets, larger panels are justified.
 
 **Dissent-driven convergence (always at --max):**
 

@@ -445,7 +445,15 @@ graph LR
 6. **Validation** — Dissent reviewer challenges the synthesis (web fact-check preferred; same-session agent review as fallback — see [Limitations](#honest-limitations))
 7. **Final report** — What survived, what's disputed, what to do next
 
-### Max Mode (7-15 recommended, user can override, `--max`)
+### Max Mode (7-15 recommended, scalable, `--max`)
+
+The supervisor picks 7-15 agents by default. To scale higher, combine with `--set`:
+
+```bash
+/quorum "question" --max              # supervisor picks 7-15
+/quorum "question" --max --set 25     # you set 25, full convergence rounds
+/quorum "question" --max --set 50     # 50 agents, swarm auto-engages at 20+
+```
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#FF3CAC', 'primaryTextColor': '#fff', 'primaryBorderColor': '#D4006A', 'lineColor': '#2B86C5', 'background': '#0d1117'}}}%%
