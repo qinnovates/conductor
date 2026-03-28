@@ -11,9 +11,10 @@ All notable changes to Quorum are documented here.
 - **Orthogonal composability** — `--ratify` composes with all tiers. `--max --ratify` = deep deliberation + audit + human approval. Two independent axes: depth (--max) and control (--ratify)
 - **Token cost** — ~1.7x base for --ratify alone, ~2.4x for --max --ratify
 
-### Added — Research Drift Diff (Anti-Hallucination Layer)
-- **Drift Diff** — tracks claims ADDED between Phase 1 (independent research) and Phase 4 (synthesis). Classifies each new claim as EXPANDED (sourced), DRIFT (unsourced — flagged for user validation), or INVERTED (finding direction changed from source — blocks delivery)
-- **Mandatory in every verdict** — diff is presented to the user alongside the Evidence Scorecard. DRIFT and INVERTED findings require user validation before the synthesis is final
+### Added — Research Drift Diff (Supervisor-Integrated Anti-Hallucination)
+- **Phase 4.5: Drift Detection & Auto-Correction** — integrated into the supervisor's synthesis workflow, not a passive validation layer. Supervisor builds a claim pool from Phase 1 outputs (text + source + finding direction), diffs every synthesis claim against it, and auto-corrects before the verdict ships
+- **Three drift classifications:** EXPANDED (sourced new claim — verify source), DRIFT (unsourced new claim — supervisor web-searches, sources, or removes), INVERTED (finding direction flipped from source — supervisor corrects to match source or preserves both in disagreement register)
+- **Resolved diff in every verdict** — user sees what the supervisor already fixed + what remains unresolved. Supervisor is the first line of defense; user handles genuine judgment calls
 - **Catches the most dangerous hallucination pattern:** real DOI grafted onto fabricated metadata with inverted finding direction. Based on QIF research protocol incident (2026-03-17)
 - Validation layers increased from 5 to 6
 

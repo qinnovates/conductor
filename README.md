@@ -328,7 +328,7 @@ Parallel agents with **mandatory dissent**. Critics must counter-propose, not ju
 | Tier | Flag | Agents | What Happens |
 |------|------|--------|-------------|
 | Default | *(none)* | 3-8 | SME panel debates, supervisor synthesizes |
-| Max | `--max` | 7-15 | Full dissent-driven convergence with iterative rounds. Subsumes the old `--converse` flag. Teams/dialectic/superpower auto-selected as needed |
+| Max | `--max` | 7-15 (recommended, user can go higher) | Full dissent-driven convergence with iterative rounds. Subsumes the old `--converse` flag. Teams/dialectic/superpower auto-selected as needed |
 | Reviewers | `--reviewers` | 3-5 phases | Sequential review cascade, auto-decide mechanical findings, surface taste calls |
 | Custom | `--set N` | N | At 20+, swarm architecture auto-engages (same as `--swarm`) |
 
@@ -445,7 +445,7 @@ graph LR
 6. **Validation** — Dissent reviewer challenges the synthesis (web fact-check preferred; same-session agent review as fallback — see [Limitations](#honest-limitations))
 7. **Final report** — What survived, what's disputed, what to do next
 
-### Max Mode (7-15 agents, `--max`)
+### Max Mode (7-15 recommended, user can override, `--max`)
 
 ```mermaid
 %%{init: {'theme': 'base', 'themeVariables': {'primaryColor': '#FF3CAC', 'primaryTextColor': '#fff', 'primaryBorderColor': '#D4006A', 'lineColor': '#2B86C5', 'background': '#0d1117'}}}%%

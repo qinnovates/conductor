@@ -30,7 +30,7 @@ Built by [qinnovate](https://qinnovate.com) | [Full docs on GitHub](https://gith
 | Command | What Happens | Agents |
 |---------|-------------|--------|
 | `/quorum "question"` | 5 SMEs debate, supervisor synthesizes | 5 (research-backed default) |
-| `/quorum "question" --max` | Full dissent-driven convergence, teams if needed | 7-15 (supervisor decides) |
+| `/quorum "question" --max` | Full dissent-driven convergence, teams if needed | 7-15 recommended (supervisor decides, user can override higher) |
 | `/quorum "question" --reviewers` | Top-down sequential review pipeline, auto-decide, surface taste calls only | 3-5 phases (topic-driven) |
 | `/quorum "question" --set 200` | Custom scale — swarm auto-engages at 20+ | User-defined |
 
@@ -41,7 +41,7 @@ That's it. The supervisor handles everything else: mode, structure, rigor, resea
 | Tier | Agents | Research Basis |
 |------|--------|---------------|
 | Default | 5 | Woolley et al. 2010 (collective intelligence peaks with equal conversational turns in small groups); Du et al. 2023 (3-agent AI debate optimum + supervisor + dissent = 5) |
-| Max | 7-15 | 7 = synchronous ceiling before conversational inequality (Dunbar layer 1); 15 = Delphi panel optimum for heterogeneous experts (Linstone & Turoff 2002) |
+| Max | 7-15 (recommended) | 7 = synchronous ceiling before conversational inequality (Dunbar layer 1); 15 = Delphi panel optimum (Linstone & Turoff 2002). User can request more — supervisor scales to `--max N` if specified |
 | Set N | User-defined | At 20+, swarm architecture auto-engages: MECE taxonomy partitioning, environment-based coordination, pattern detection |
 
 ### Mandatory Dissent Minimum: 2
@@ -340,13 +340,13 @@ The Auditor is isolated from the panel's deliberation to prevent anchoring (Lore
 
 1. **Setup** — Supervisor analyzes the question, picks 5 SMEs with diverse perspectives. Minimum 2 dissent.
 2. **Independent work** — All agents work in parallel. No one sees anyone else's output.
-3. **Triage** — Supervisor reads all reports, identifies key disagreements.
+3. **Triage** — Supervisor reads all reports, builds claim pool (text + source + direction for every factual claim), identifies key disagreements.
 4. **Cross-review** — Debate pairs argue. Devil's Advocate challenges the majority. Critics must counter-propose, not just attack.
-5. **Synthesis** — Supervisor authors the verdict with editorial judgment. Reasoning quality over vote counts.
+5. **Synthesis + Drift Detection** — Supervisor authors the verdict, then diffs every claim against the Phase 1 claim pool. Unsourced expansions (DRIFT) are auto-corrected: web-searched, sourced, or removed. Inverted findings are corrected to match source direction. Resolved drift diff included in verdict.
 6. **Validation** — Web fact-check (preferred) or dissent agent review.
-7. **Final report** — What survived, what's disputed, what to do next.
+7. **Final report** — What survived, what's disputed, drift diff (auto-corrected + unresolved), what to do next.
 
-### Max (7-15 agents, supervisor decides)
+### Max (7-15 recommended, user can override higher)
 
 `--max` always runs **dissent-driven convergence** — the full panel iterates across rounds until a solution survives sustained attack. The supervisor also auto-selects the right structure:
 

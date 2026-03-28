@@ -508,6 +508,56 @@ Produce:
 
 ---
 
+## Supervisor Drift Detection (Phase 4.5)
+
+### When Used
+
+**Phase 4.5 (after synthesis draft, before validation).** The supervisor runs this as part of the synthesis authoring process — not as a separate agent. This is the supervisor's internal checklist applied to its own Phase 4 output.
+
+### Supervisor Instructions (appended to Phase 4 synthesis prompt)
+
+```
+After drafting the synthesis, run the Research Drift Diff before proceeding to Phase 5.
+
+STEP 1 — CLAIM POOL: You already cataloged Phase 1 findings during triage. For each factual claim in the Phase 1 pool, note: the claim text, its source (DOI/URL/reasoning/unsourced), and its finding direction (positive/negative/neutral).
+
+STEP 2 — DIFF: Compare every factual claim in your synthesis draft against the claim pool:
+  - SOURCED: claim matches a Phase 1 claim with a source → no action
+  - UNSOURCED: claim matches a Phase 1 claim without a source → flag in Evidence Scorecard
+  - EXPANDED: claim is NEW and has a cited source → verify the source exists (web search if available)
+  - DRIFT: claim is NEW and has NO source → auto-correct (see Step 3)
+  - INVERTED: claim exists in the pool but the finding direction flipped → auto-correct (see Step 3)
+
+STEP 3 — AUTO-CORRECT:
+  For DRIFT claims:
+    1. Search for a source (web search if --no-web is not set)
+    2. If source found → reclassify as EXPANDED, include in synthesis
+    3. If no source found → REMOVE from synthesis OR downgrade to "unverified estimate" with explicit label
+  For INVERTED claims:
+    1. Re-read the original Phase 1 claim and your synthesis claim
+    2. Correct the synthesis to match the source direction
+    3. If the inversion was intentional (an agent argued against the source with counter-evidence) → preserve BOTH positions in the disagreement register with evidence for each side
+  For EXPANDED claims:
+    1. If source is verifiable → include
+    2. If source cannot be verified → reclassify as DRIFT, apply DRIFT rules
+
+STEP 4 — RESOLVED DIFF: Include in the final verdict:
+  - What you auto-corrected (before/after for each)
+  - What remains unresolved (with your note explaining why)
+  - Drift summary: N findings, M auto-corrected, K require user validation
+
+Do NOT present unresolved drift findings as established claims. They must be visibly flagged.
+```
+
+### Tips
+
+- The drift diff is the supervisor's responsibility, not a separate agent's. It runs inline during Phase 4 authoring.
+- INVERTED findings are the highest priority — a real citation with a flipped conclusion is the most dangerous hallucination pattern because it passes superficial verification.
+- When `--no-web` is set, the supervisor cannot web-search for DRIFT sources. In this case, all DRIFT claims are either removed or explicitly labeled "unverified — web search unavailable."
+- The drift diff adds ~5-10% to Phase 4 token cost. This is negligible compared to the hallucination risk it prevents.
+
+---
+
 ## Validation Gate Prompt
 
 ### When Used
