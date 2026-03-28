@@ -11,6 +11,12 @@ All notable changes to Quorum are documented here.
 - **Visible in verdict** — full vote breakdown with weighted totals shown to user
 - Also triggers in default mode when supervisor detects a 40-60% near-split with similar evidence quality
 
+### Added — Vagueness Gate (Auto-Triggered)
+- **Automatic prompt quality check** — supervisor detects vague prompts (no scope, no constraints, no success criteria) and asks 2-4 targeted clarifying questions before spawning agents
+- **Fires without --ponder** — auto-triggered when 2+ vagueness signals detected. User answers refine the internal prompt agents see
+- **Override with "just run it"** — user can bypass if speed matters more than precision
+- **Relationship to --ponder:** vagueness gate asks only what's needed (2-4 questions). --ponder runs full interactive prompt optimization. --ponder supersedes the gate
+
 ### Added — Ratify Mode (`--ratify`)
 - **Human-in-the-loop approval gate** — after deliberation, `--ratify` adds a structurally independent Auditor review and pauses for human approval before the verdict is final
 - **Auditor agent** — fresh agent invocation with structural independence (reads ONLY original question + verdict, no phase history). Evaluates: logical coherence, evidence sufficiency, scope completeness, internal consistency, actionability. Research basis: Lorenz et al. (2011) social influence isolation

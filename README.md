@@ -352,6 +352,7 @@ Parallel agents with **mandatory dissent**. Critics must counter-propose, not ju
 | "Review this" + `--artifact` | Review mode (agents analyze the file) | Artifact present + review/audit/validate language |
 | "What am I missing about..." | Explore mode (reframe the question) | Meta-question / exploratory language |
 | "EEG auth methods landscape" | Research mode (web search + synthesis) | Open knowledge question without artifact |
+| Vague prompt (no scope, no constraints) | Vagueness gate (2-4 clarifying questions) | Auto-detected when 2+ vagueness signals present. No flag needed |
 | Any question at `--max` | Dissent-driven convergence (iterative rounds) | `--max` always uses converse mode internally |
 | Any question at `--set 20+` | Swarm (MECE taxonomy + environment) | Agent count >= 20 |
 | 3+ domains detected | Teams (internal deliberation, cross-challenge) | Supervisor detects domain count |
@@ -437,7 +438,7 @@ graph LR
     style H fill:#00E5FF,stroke:#0097A7,color:#000
 ```
 
-1. **Setup** — Supervisor analyzes your question, picks experts with diverse perspectives. Minimum 2 dissent
+1. **Setup** — Supervisor analyzes your question, picks experts with diverse perspectives. Minimum 2 dissent. Before spawning, the supervisor checks if the prompt is specific enough. If vague (no scope, no constraints), it asks 2-4 clarifying questions first
 2. **Independent work** — All agents work in parallel, no one sees anyone else's output
 3. **Triage** — Supervisor reads all reports, drops low-value agents, identifies key disagreements
 4. **Cross-review** — Selected agents debate each other directly. Devil's Advocate challenges the majority

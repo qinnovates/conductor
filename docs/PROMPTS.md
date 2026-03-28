@@ -462,6 +462,22 @@ Produce:
 ## Rationale for Declaration (which signal triggered it, evidence from the transcript)
 ```
 
+### Vote Protocol (triggered by Judge when C* ∈ [0.65, 0.8))
+
+When the Judge detects near-consensus, each agent receives this instruction appended to their round prompt:
+
+```
+VOTE REQUESTED — The Judge has detected near-consensus (C* = {{C_SCORE}}).
+
+Cast your ballot:
+- POSITION: Which position do you support? (A or B, or name it)
+- CONFIDENCE: 1-10 (how certain are you?)
+- RATIONALE: One sentence — your single strongest reason
+- EVIDENCE: Does your rationale cite a specific source? (yes/no)
+
+Your vote is weighted by evidence quality and independence. An unsupported preference counts less than a cited finding.
+```
+
 ### Historian Template (--full only)
 
 ```

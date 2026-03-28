@@ -441,6 +441,10 @@ Round N: Judge decides when to end (max 6). No fixed range — the
          Declares: CONVERGED / TENSION / EXHAUSTED
 ```
 
+### Structured Vote (near-consensus tiebreaker)
+
+When the convergence score C* lands in [0.65, 0.8) — positions are close but not converged — agents cast weighted ballots. Votes are weighted by evidence quality (cited sources count more than unsupported preferences) and independence (low overlap with co-voters counts more than echo voting). Useful when the supervisor can't differentiate positions by reasoning strength alone. Vote result is visible in the verdict. The supervisor can override the vote outcome with stated reasoning.
+
 ### Anti-duplication rule
 
 No repetition. Every round must build on the last. Critics must counter-propose, not just attack. "This won't work" is not allowed — "This won't work because X, and here's what would survive X" is required. No free nihilism.
