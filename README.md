@@ -28,6 +28,27 @@ Built by [qinnovate](https://qinnovate.com) | [Full docs](docs/ARCHITECTURE.md)
 
 ---
 
+## NEW: Hackathon Mode
+
+Say "build" and Quorum becomes a hackathon team. No flags, no config — just describe what you want built.
+
+```bash
+/quorum "Build a REST API for user auth with JWT" --max
+```
+
+Quorum auto-detects implementation intent and runs the hackathon pipeline:
+
+1. **Decomposition agent** breaks your idea into a PRD with TDD enforcement — exact file paths, bite-sized tasks, machine-verifiable acceptance criteria
+2. **Adversarial stress-test** (`--max`) — Architect, Breaker, TDD Enforcer, Pragmatist, and Judge attack the PRD until it survives or gets rewritten
+3. **Output** — a battle-tested `_swarm/prd-*.md` ready for implementation
+4. **Ralph loop** executes each task autonomously: test → fail → implement → pass → commit → repeat
+
+From "Build X" to shipping code. One command.
+
+[Full hackathon docs →](#hackathon-mode-auto-detected)
+
+---
+
 ## Documentation
 
 - **[Usage Guide](docs/GUIDE.md)** — When to use flat vs max vs reviewers vs swarm. Decision matrix, cost guide, examples
@@ -292,7 +313,7 @@ Parallel agents with **mandatory adversarial**. Critics must counter-propose, no
 ### For Building
 
 ```bash
-# Auto-detects superpower mode, generates battle-tested PRD
+# Auto-detects hackathon mode, generates battle-tested PRD
 /quorum "Build a REST API for user auth with JWT" --max
 
 # Review a document
@@ -336,7 +357,7 @@ Parallel agents with **mandatory adversarial**. Critics must counter-propose, no
 | Tier | Flag | Agents | What Happens |
 |------|------|--------|-------------|
 | Default | *(none)* | 5 | SME panel debates, supervisor synthesizes |
-| Max | `--max` | 7-15 (recommended, user can go higher) | Full adversarial-driven convergence with iterative rounds. Subsumes the old `--converse` flag. Teams/dialectic/superpower auto-selected as needed |
+| Max | `--max` | 7-15 (recommended, user can go higher) | Full adversarial-driven convergence with iterative rounds. Subsumes the old `--converse` flag. Teams/dialectic/hackathon auto-selected as needed |
 | Reviewers | `--reviewers` | 3-5 phases | Sequential review cascade, auto-decide mechanical findings, surface taste calls |
 | Custom | `--set N` | N | At 20+, swarm architecture auto-engages (same as `--swarm`) |
 
@@ -358,7 +379,7 @@ Parallel agents with **mandatory adversarial**. Critics must counter-propose, no
 | What You Say | What Fires | How It's Detected |
 |-------------|-----------|-------------------|
 | "Should we use X or Y?" | Dialectic (2 agents, Socratic rounds) | Binary question pattern |
-| "Build a REST API for..." | Superpower (PRD + TDD + Ralph loop) | Implementation intent: "build", "implement", "create", "add feature" |
+| "Build a REST API for..." | Hackathon (PRD + TDD + Ralph loop) | Implementation intent: "build", "implement", "create", "add feature" |
 | "Review this" + `--artifact` | Review mode (agents analyze the file) | Artifact present + review/audit/validate language |
 | "What am I missing about..." | Explore mode (reframe the question) | Meta-question / exploratory language |
 | "EEG auth methods landscape" | Research mode (web search + synthesis) | Open knowledge question without artifact |
@@ -521,7 +542,7 @@ The full panel iterates across rounds until a solution survives sustained attack
 The supervisor also auto-selects structure as needed:
 - **Teams** — if 3+ domains with different incentives. Teams deliberate internally, leads cross-challenge. Socrates questions weakest points, Plato audits evidence
 - **Dialectic** — if the question is binary or philosophical. 2 agents drill through contradiction across rounds
-- **Superpower** — if the query is "build X". Generates PRD with TDD + acceptance criteria, stress-tests it, outputs Ralph loop command
+- **Hackathon** — if the query is "build X". Generates PRD with TDD + acceptance criteria, stress-tests it, outputs Ralph loop command
 
 **Swarm (20-1000+ agents, `--set N`):**
 - **Partition Engine** — MECE taxonomy, each agent gets a unique territory
@@ -531,9 +552,9 @@ The supervisor also auto-selects structure as needed:
 
 **[Full architecture documentation ->](docs/ARCHITECTURE.md)**
 
-## Superpower Mode (Auto-Detected)
+## Hackathon Mode (Auto-Detected)
 
-When you say "build", "implement", "create", "scaffold", "write a", "set up", or "add feature", the supervisor auto-triggers the superpower pipeline. No flag needed.
+When you say "build", "implement", "create", "scaffold", "write a", "set up", or "add feature", the supervisor auto-triggers the hackathon pipeline. No flag needed.
 
 ```bash
 /quorum "Build a REST API for user auth with JWT" --max
@@ -566,7 +587,7 @@ graph LR
 
 **What happens:**
 
-1. Supervisor detects implementation intent ("Build") -> triggers superpower pipeline
+1. Supervisor detects implementation intent ("Build") -> triggers hackathon pipeline
 2. **Decomposition agent** generates a PRD with TDD enforcement:
    - Exact file paths for every file created or modified
    - Bite-sized tasks (one action each, 2-5 minutes)
@@ -590,7 +611,7 @@ graph LR
 | Stress-test | No adversarial review | Full convergence (5 personas, C >= 0.8) |
 | Output quality | Good for small features | Production-grade for complex systems |
 
-No `--superpower` flag exists. Same capability, zero cognitive load.
+No `--hackathon` flag exists. Same capability, zero cognitive load.
 
 ## Reviewers Mode (`--reviewers`)
 

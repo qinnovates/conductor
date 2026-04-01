@@ -73,7 +73,7 @@ Every panel of 5+ agents includes at least 2 adversarial agents. Not 1.
 | What You Say | What Fires | How It's Detected |
 |-------------|-----------|-------------------|
 | "Should we use X or Y?" | Dialectic (2 agents, Socratic rounds) | Binary question pattern |
-| "Build a REST API for..." | Superpower (PRD + TDD + Ralph loop) | Implementation intent: "build", "implement", "create", "add feature" |
+| "Build a REST API for..." | Hackathon (PRD + TDD + Ralph loop) | Implementation intent: "build", "implement", "create", "add feature" |
 | "Review this" + `--artifact` | Review mode (agents analyze the file) | Artifact present + review/audit/validate language |
 | "What am I missing about..." | Explore mode (reframe the question) | Meta-question / exploratory language |
 | "EEG auth methods landscape" | Research mode (web search + synthesis) | Open knowledge question without artifact |
@@ -91,7 +91,7 @@ Every panel of 5+ agents includes at least 2 adversarial agents. Not 1.
 # Stress-test a decision — full adversarial-driven convergence
 /quorum "Should we build or buy our auth system?" --max
 
-# Build something — auto-detects superpower mode, generates battle-tested PRD
+# Build something — auto-detects hackathon mode, generates battle-tested PRD
 /quorum "Build a REST API for user auth with JWT" --max
 # → Supervisor detects "Build" → generates PRD with TDD + acceptance criteria
 # → Converse stress-tests the PRD (Architect, Breaker, TDD Enforcer, Pragmatist, Judge)
@@ -116,9 +116,9 @@ Every panel of 5+ agents includes at least 2 adversarial agents. Not 1.
 /quorum "Microservices or monolith?" --max --dry-run
 ```
 
-## Superpower Mode (Auto-Detected)
+## Hackathon Mode (Auto-Detected)
 
-When you say "build", "implement", "create", "scaffold", "write a", "set up", or "add feature", the supervisor auto-triggers the superpower pipeline. No flag needed.
+When you say "build", "implement", "create", "scaffold", "write a", "set up", or "add feature", the supervisor auto-triggers the hackathon pipeline. No flag needed.
 
 ```bash
 /quorum "Build a REST API for user auth with JWT" --max
@@ -126,7 +126,7 @@ When you say "build", "implement", "create", "scaffold", "write a", "set up", or
 
 **What happens:**
 
-1. Supervisor detects implementation intent ("Build") → triggers superpower pipeline
+1. Supervisor detects implementation intent ("Build") → triggers hackathon pipeline
 2. **Decomposition agent** generates a PRD with TDD enforcement:
    - Exact file paths for every file created or modified
    - Bite-sized tasks (one action each, 2-5 minutes)
@@ -160,7 +160,7 @@ When you say "build", "implement", "create", "scaffold", "write a", "set up", or
 
 **Trigger keywords:** `build`, `implement`, `create`, `add feature`, `scaffold`, `write a`, `set up` — anything that signals "I want code output, not analysis."
 
-No `--superpower` flag exists. Same capability, zero cognitive load.
+No `--hackathon` flag exists. Same capability, zero cognitive load.
 
 ## Vagueness Gate (Auto-Triggered)
 
@@ -593,7 +593,7 @@ When C* is in the close-call zone [0.65, 0.8) — positions are similar but not 
 **Auto-selected structures (supervisor decides which to layer on):**
 - **Teams** — if 3+ domains with different incentives. Teams deliberate internally, leads cross-challenge. Socrates questions weakest points, Plato audits evidence.
 - **Dialectic** — if the question is binary or philosophical. 2 agents drill through contradiction across rounds.
-- **Superpower** — if the query is "build X" / "implement Y". Generates PRD with TDD + acceptance criteria, converse-stress-tests it, outputs Ralph loop command.
+- **Hackathon** — if the query is "build X" / "implement Y". Generates PRD with TDD + acceptance criteria, converse-stress-tests it, outputs Ralph loop command.
 
 ### Set N (user-defined scale)
 

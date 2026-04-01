@@ -14,7 +14,7 @@ Prompt template reference for Quorum. These templates define how each agent type
 6. [Converse Mode Templates](#converse-mode-templates)
 7. [Validation Gate Prompt](#validation-gate-prompt)
 8. [Ratify Auditor Template](#ratify-auditor-template)
-9. [Superpower Mode Templates](#superpower-mode-templates)
+9. [Hackathon Mode Templates](#superpower-mode-templates)
 
 ---
 
@@ -685,11 +685,11 @@ Security:
 
 ---
 
-## Superpower Mode Templates
+## Hackathon Mode Templates
 
 ### When Used
 
-**`--superpower` mode.** Phase S1 spawns the Decomposition Agent. Phase S2 runs Converse Mode with specialized personas to stress-test the PRD.
+**`--hackathon` mode.** Phase S1 spawns the Decomposition Agent. Phase S2 runs Converse Mode with specialized personas to stress-test the PRD.
 
 ### Phase S1: Decomposition Agent Template
 
@@ -732,7 +732,7 @@ STOP. Be specific. The agent executing this has zero context beyond this documen
 
 ## Output Format
 
-Use the PRD format specified in SKILL.md > Superpower Mode > PRD Format.
+Use the PRD format specified in SKILL.md > Hackathon Mode > PRD Format.
 Every task uses `- [ ]` checkbox syntax.
 Include the Ralph loop execution command at the top.
 ```
@@ -822,7 +822,7 @@ Verdict options:
 
 | Variable | Source | Description |
 |----------|--------|-------------|
-| `{{TOPIC}}` | User's `--superpower` invocation | The task to decompose |
+| `{{TOPIC}}` | User's `--hackathon` invocation | The task to decompose |
 | `{{PROJECT_CONTEXT}}` | Context Engine scan | Project structure, tech stack, conventions |
 | `{{SESSION_BOUNDARY}}` | Auto-generated | Unique token for injection defense |
 | `{{PRD_CONTENT}}` | Phase S1 output | The generated PRD, fed to Phase S2 converse |

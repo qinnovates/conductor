@@ -3,7 +3,7 @@
 # Usage: ./ralph.sh [--max N] [--prd PATH] [--review-every N]
 #
 # Combines:
-#   Superpowers discipline → iron-clad task decomposition
+#   Hackathon discipline → iron-clad task decomposition
 #   Quorum review          → multi-persona validation between iterations
 #   Ralph persistence      → keep going until machine-verified complete
 #
@@ -41,7 +41,7 @@ if [[ -z "$PRD_PATH" ]]; then
   echo "Usage: ./ralph.sh --prd <path-to-prd.md>"
   echo ""
   echo "Generate a PRD first:"
-  echo '  /quorum "your task description" --superpower'
+  echo '  /quorum "your task description" --hackathon'
   exit 1
 fi
 
